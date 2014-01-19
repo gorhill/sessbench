@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Browser session benchmarker</title>
+<style>
+body {
+    font: 13px sans-serif;
+    box-sizing: border-box;
+    }
+h2 {
+    margin: 0 0 1em 0;
+    }
+textarea {
+    margin: 0;
+    border: 1px solid #ccc;
+    padding: 4px;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    resize: none;
+    box-sizing: inherit;
+    }
+code {
+    font: 11px monospace;
+    background-color: #eee;
+    }
+.pane-root {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    width: 98%;
+    vertical-align: top;
+    position: relative;
+    box-sizing: border-box;
+    }
+.pane {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    display: inline-block;
+    vertical-align: top;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    }
+.pane:nth-of-type(1) {
+    padding: 4px;
+    left: 0;
+    width: 40%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    }
+.pane:nth-of-type(2) {
+    left: 40%;
+    right: 0;
+    }
+table td {
+    white-space: nowrap;
+    text-align: right;
+    }
+table tr:nth-of-type(1) td {
+    text-align: left;
+    }
+table td:nth-of-type(1) {
+    padding-right: 1em;
+    }
+#startButton {
+    }
+</style>
+</head>
+<body>
+
+<div style="pane-root">
+
+<div class="pane">
+    <h2>Session benchmarker</h2>
+    <p>Each directive in the right pane will be executed in sequence.
+    Each directive must be separated by a newline character.
+    Unknown directives will be ignored.</p>
+    <p>Valid directives:</p>
+    <ul>
+        <li><code>repeat <i>n</i></code>: Repeat the benchmark <i>n</i> time and report averaged results.
+        <li><code>wait <i>n</i></code>: Wait <i>n</i> seconds before each page load.
+        <li><code>clear cache</code>: Clear the browser cache.
+        <li><code><i>URL</i></code>: A URL to benchmark.
+    <p style="text-align:center"><button id="startButton">Start benchmark</button></p>
+    <table id="results">
+    <tr><td colspan="2">Averages over <span id="sessionRepeat">&mdash;</span> runs
+    <tr><td>Load time:<td><span id="sessionTime">&mdash;</span>
+    <tr><td>Bandwidth:<td><span id="sessionBandwidth">&mdash;</span>
+    <tr><td>Network hits:<td><span id="sessionNetworkCount">&mdash;</span>
+    <tr><td>Cache hits:<td><span id="sessionCacheCount">&mdash;</span>
+    </table>
+</div>
+
+<div class="pane">
+    <textarea id="playlistRaw"></textarea>
+</div>
+
+</div>
+
+<script src="js/devtools-panel.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+    "manifest_version": 2,
+    "name": "Browser session benchmarker",
+    "version": "0.0.1.0",
+    "description": "Browser session benchmarker: To measure load time and bandwidth of web pages using realistic scenarios",
+    "author": "Raymond Hill",
+    "background": {
+        "page": "background.html"
+    },
+    "homepage_url": "https://github.com/gorhill/sessionperf/wiki",
+    "minimum_chrome_version": "22.0",
+    "devtools_page": "devtools.html",
+    "permissions": [
+        "browsingData",
+        "webRequest",
+        "webRequestBlocking",
+        "webNavigation",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "web_accessible_resources": [
+    ]
+}
