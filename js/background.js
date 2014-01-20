@@ -45,6 +45,8 @@ var SessBench = {
     sessionBandwidth: 0,
     networkCount: 0,
     cacheCount: 0,
+    scriptCount: 0,
+    cookieSentCount: 0,
     repeatCountdown: 0,
     resultStack: [],
 
@@ -87,7 +89,9 @@ function stopSession() {
         time: sess.sessionTime,
         bandwidth: sess.sessionBandwidth,
         networkCount: sess.networkCount,
-        cacheCount: sess.cacheCount
+        cacheCount: sess.cacheCount,
+        cookieSentCount: sess.cookieSentCount,
+        scriptCount: sess.scriptCount
     };
     sess.resultStack.push(results);
     sess.repeatCountdown--;
@@ -110,7 +114,9 @@ function processResults(entries) {
         time: 0,
         bandwidth: 0,
         networkCount: 0,
-        cacheCount: 0
+        cacheCount: 0,
+        scriptCount: 0,
+        cookieSentCount: 0
     };
     var entry;
     while ( i-- ) {
@@ -119,12 +125,16 @@ function processResults(entries) {
         results.bandwidth += entry.bandwidth;
         results.networkCount += entry.networkCount;
         results.cacheCount += entry.cacheCount;
+        results.scriptCount += entry.scriptCount;
+        results.cookieSentCount += entry.cookieSentCount;
     }
     if ( n ) {
         results.time /= n;
         results.bandwidth /= n;
         results.networkCount /= n;
         results.cacheCount /= n;
+        results.scriptCount /= n;
+        results.cookieSentCount /= n;
     }
     return results;
 }
@@ -144,6 +154,8 @@ function executePlaylist() {
         sess.sessionBandwidth = 0;
         sess.networkCount = 0;
         sess.cacheCount = 0;
+        sess.scriptCount = 0;
+        sess.cookieSentCount = 0;
         sess.state = 'waiting';
     }
 
@@ -243,6 +255,10 @@ function processNetworkRequest(details, portName) {
     } else {
         sess.networkCount++;
     }
+    sess.cookieSentCount += details.cookieSentCount;
+    if ( details.isScript ) {
+        sess.scriptCount++;
+    }
 }
 
 /******************************************************************************/
@@ -269,6 +285,8 @@ function onPortMessageHandler(request, port) {
         break;
     }
 }
+
+/******************************************************************************/
 
 function onPortDisonnectHandler(port) {
     var sess = SessBench;

@@ -53,26 +53,32 @@ window.addEventListener('load', function() {
     function onRequestFinishedHandler(details) {
         var uploadSize = 0;
         var downloadSize = 0;
+        var cookieSentCount = 0;
         var fromCache = !details.connection;
+        var request = details.request;
+        var response = details.response;
         if ( !fromCache ) {
-            if ( details.request.headerSize ) {
-                uploadSize += details.request.headerSize;
+            if ( request.headerSize ) {
+                uploadSize += request.headerSize;
             }
-            if ( details.request.bodySize ) {
-                uploadSize += details.request.bodySize;
+            if ( request.bodySize ) {
+                uploadSize += request.bodySize;
             }
-            if ( details.response.headerSize ) {
-                downloadSize += details.response.headerSize;
+            if ( response.headerSize ) {
+                downloadSize += response.headerSize;
             }
-            if ( details.response.bodySize ) {
-                downloadSize += details.response.bodySize;
+            if ( response.bodySize ) {
+                downloadSize += response.bodySize;
             }
+            cookieSentCount = request.cookies.length;
         }
         var msg = {
             what: 'networkRequest',
             uploadSize: uploadSize,
             downloadSize: downloadSize,
-            fromCache: fromCache
+            fromCache: fromCache,
+            cookieSentCount: cookieSentCount,
+            isScript: response.content.mimeType && response.content.mimeType.indexOf('script') >= 0
         };
         backgroundPagePort.postMessage(msg);
     }
@@ -96,6 +102,8 @@ window.addEventListener('load', function() {
         elemById('sessionBandwidth').innerHTML = renderNumber(details.bandwidth.toFixed(0)) + ' bytes';
         elemById('sessionNetworkCount').innerHTML = renderNumber(details.networkCount.toFixed(0));
         elemById('sessionCacheCount').innerHTML = renderNumber(details.cacheCount.toFixed(0));
+        elemById('sessionCookieSentCount').innerHTML = details.cookieSentCount.toFixed(1);
+        elemById('sessionScriptCount').innerHTML = details.scriptCount.toFixed(1);
         elemById('startButton').disabled = false;
         elemById('startButton').innerHTML = 'Start benchmark';
     }
@@ -108,6 +116,8 @@ window.addEventListener('load', function() {
         elemById('sessionBandwidth').innerHTML = '&mdash;';
         elemById('sessionNetworkCount').innerHTML = '&mdash;';
         elemById('sessionCacheCount').innerHTML = '&mdash;';
+        elemById('sessionCookieSentCount').innerHTML = '&mdash;';
+        elemById('sessionScriptCount').innerHTML = '&mdash;';
         backgroundPagePort.postMessage({
             what: 'startSession',
             tabId: chrome.devtools.inspectedWindow.tabId,
