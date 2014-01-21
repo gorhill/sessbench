@@ -12,8 +12,6 @@
     "devtools_page": "devtools.html",
     "permissions": [
         "browsingData",
-        "webRequest",
-        "webRequestBlocking",
         "webNavigation",
         "http://*/*",
         "https://*/*"
