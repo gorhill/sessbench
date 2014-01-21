@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Browser session benchmarker",
-    "version": "0.0.1.0",
+    "version": "0.0.3.0",
     "description": "Browser session benchmarker: To measure load time and bandwidth of web pages using realistic scenarios",
     "author": "Raymond Hill",
     "background": {

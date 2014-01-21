@@ -23,109 +23,176 @@
 /******************************************************************************/
 
 window.addEventListener('load', function() {
-    function elemById(id) {
-        return document.getElementById(id);
-    }
 
-    var backgroundPagePort = chrome.runtime.connect({
-        name: 'devtools-panel-' + chrome.devtools.inspectedWindow.tabId
-        });
+/******************************************************************************/
 
-    function onMessageHandler(request) {
-        if ( request && request.what ) {
-            switch ( request.what ) {
+function elemById(id) {
+    return document.getElementById(id);
+}
 
-            case 'setPlaylist':
-                elemById('playlistRaw').value = request.playlist.join('\n\n');
-                break;
+var backgroundPagePort = chrome.runtime.connect({
+    name: 'devtools-panel-' + chrome.devtools.inspectedWindow.tabId
+    });
 
-            case 'sessionCompleted':
-                sessionCompleted(request);
-                break;
-
-            default:
-                break;
-            }
-        }
-    }
-    backgroundPagePort.onMessage.addListener(onMessageHandler);
-
-    function onRequestFinishedHandler(details) {
-        var uploadSize = 0;
-        var downloadSize = 0;
-        var cookieSentCount = 0;
-        var fromCache = !details.connection;
-        var request = details.request;
-        var response = details.response;
-        if ( !fromCache ) {
-            if ( request.headerSize ) {
-                uploadSize += request.headerSize;
-            }
-            if ( request.bodySize ) {
-                uploadSize += request.bodySize;
-            }
-            if ( response.headerSize ) {
-                downloadSize += response.headerSize;
-            }
-            if ( response.bodySize ) {
-                downloadSize += response.bodySize;
-            }
-            cookieSentCount = request.cookies.length;
-        }
+function postPageStats(details) {
+    chrome.devtools.network.getHAR(function(harLog) {
         var msg = {
-            what: 'networkRequest',
-            uploadSize: uploadSize,
-            downloadSize: downloadSize,
-            fromCache: fromCache,
-            cookieSentCount: cookieSentCount,
-            isScript: response.content.mimeType && response.content.mimeType.indexOf('script') >= 0
+            what: 'pageStats',
+            loadTime: 0,
+            networkCount: 0,
+            cacheCount: 0,
+            cookieSentCount: 0,
+            scriptCount: 0
         };
-        backgroundPagePort.postMessage(msg);
-    }
-    chrome.devtools.network.onRequestFinished.addListener(onRequestFinishedHandler);
 
-    function renderNumber(value) {
-        if ( +value > 1000 ) {
-            value = value.toString();
-            var i = value.length - 3;
-            while ( i > 0 ) {
-                value = value.slice(0, i) + ',' + value.slice(i);
-                i -= 3;
+        // Find page URL reference
+        var pageref = '';
+        var i = harLog.pages.length;
+        var page;
+        while ( i-- ) {
+            page = harLog.pages[i];
+            if ( page.title === details.pageURL ) {
+                pageref = harLog.pages[i].id;
+                msg.loadTime = page.pageTimings.onLoad;
+                break;
             }
         }
-        return value;
+        if ( pageref === '' ) {
+            backgroundPagePort.postMessage(msg);
+            return;
+        }
+
+        var bandwidth = 0;
+        var networkCount = 0;
+        var cacheCount = 0;
+        var scriptCount = 0;
+        var cookieSentCount = 0;
+
+        var entries = harLog.entries;
+        var i = entries.length;
+        var entry, request, response, mimeType;
+        while ( i-- ) {
+            entry = entries[i];
+            if ( entry.pageref !== pageref ) {
+                continue;
+            }
+            request = entry.request;
+            response = entry.response;
+            if ( entry.connection ) {
+                networkCount++;
+                if ( request.headerSize ) {
+                    bandwidth += request.headerSize;
+                }
+                if ( request.bodySize ) {
+                    bandwidth += request.bodySize;
+                }
+                if ( response.headerSize ) {
+                    bandwidth += response.headerSize;
+                }
+                if ( response.bodySize ) {
+                    bandwidth += response.bodySize;
+                }
+                cookieSentCount += request.cookies.length;
+            } else {
+                cacheCount++;
+            }
+            mimeType = response.content.mimeType;
+            if ( mimeType && mimeType.indexOf('script') >= 0 ) {
+                scriptCount++;
+            }
+        }
+        msg.bandwidth = bandwidth;
+        msg.networkCount = networkCount;
+        msg.cacheCount = cacheCount;
+        msg.cookieSentCount = cookieSentCount;
+        msg.scriptCount = scriptCount;
+        backgroundPagePort.postMessage(msg);
+    });
+}
+
+function onMessageHandler(request) {
+    if ( request && request.what ) {
+        switch ( request.what ) {
+
+        case 'playlist':
+            elemById('playlistRaw').value = request.playlist.join('\n\n');
+            break;
+
+        case 'sessionStarted':
+            sessionStarted(request);
+            break;
+
+        case 'sessionCompleted':
+            sessionCompleted(request);
+            break;
+
+        case 'getPageStats':
+            postPageStats(request);
+            break;
+
+        default:
+            break;
+        }
     }
+}
+backgroundPagePort.onMessage.addListener(onMessageHandler);
 
-    function sessionCompleted(details) {
-        elemById('sessionRepeat').innerHTML = details.repeatCount;
-        elemById('sessionTime').innerHTML = (details.time / 1000).toFixed(3) + ' sec';
-        elemById('sessionBandwidth').innerHTML = renderNumber(details.bandwidth.toFixed(0)) + ' bytes';
-        elemById('sessionNetworkCount').innerHTML = renderNumber(details.networkCount.toFixed(0));
-        elemById('sessionCacheCount').innerHTML = renderNumber(details.cacheCount.toFixed(0));
-        elemById('sessionCookieSentCount').innerHTML = details.cookieSentCount.toFixed(1);
-        elemById('sessionScriptCount').innerHTML = details.scriptCount.toFixed(1);
-        elemById('startButton').disabled = false;
-        elemById('startButton').innerHTML = 'Start benchmark';
+function renderNumber(value) {
+    if ( +value > 1000 ) {
+        value = value.toString();
+        var i = value.length - 3;
+        while ( i > 0 ) {
+            value = value.slice(0, i) + ',' + value.slice(i);
+            i -= 3;
+        }
     }
+    return value;
+}
 
-    function startSession() {
-        elemById('startButton').innerHTML = 'Benchmarking...';
-        elemById('startButton').disabled = true;
-        elemById('sessionRepeat').innerHTML = '&mdash;';
-        elemById('sessionTime').innerHTML = '&mdash;';
-        elemById('sessionBandwidth').innerHTML = '&mdash;';
-        elemById('sessionNetworkCount').innerHTML = '&mdash;';
-        elemById('sessionCacheCount').innerHTML = '&mdash;';
-        elemById('sessionCookieSentCount').innerHTML = '&mdash;';
-        elemById('sessionScriptCount').innerHTML = '&mdash;';
-        backgroundPagePort.postMessage({
-            what: 'startSession',
-            tabId: chrome.devtools.inspectedWindow.tabId,
-            playlistRaw: elemById('playlistRaw').value
-        });
-    }
+function startSession() {
+    backgroundPagePort.postMessage({
+        what: 'startSession',
+        tabId: chrome.devtools.inspectedWindow.tabId,
+        playlistRaw: elemById('playlistRaw').value
+    });
+}
 
-    backgroundPagePort.postMessage({ what: 'getPlaylist' });
+function sessionStarted() {
+    elemById('startButton').style.display = 'none';
+    elemById('stopButton').style.display = '';
+    elemById('sessionRepeat').innerHTML = '&mdash;';
+    elemById('sessionTime').innerHTML = '&mdash;';
+    elemById('sessionBandwidth').innerHTML = '&mdash;';
+    elemById('sessionNetworkCount').innerHTML = '&mdash;';
+    elemById('sessionCacheCount').innerHTML = '&mdash;';
+    elemById('sessionCookieSentCount').innerHTML = '&mdash;';
+    elemById('sessionScriptCount').innerHTML = '&mdash;';
+}
 
-    document.getElementById('startButton').addEventListener('click', startSession);
+function stopSession() {
+    backgroundPagePort.postMessage({
+        what: 'abortSession',
+        tabId: chrome.devtools.inspectedWindow.tabId
+    });
+}
+
+function sessionCompleted(details) {
+    elemById('sessionRepeat').innerHTML = details.repeatCount;
+    elemById('sessionTime').innerHTML = (details.time / 1000).toFixed(3) + ' sec';
+    elemById('sessionBandwidth').innerHTML = renderNumber(details.bandwidth.toFixed(0)) + ' bytes';
+    elemById('sessionNetworkCount').innerHTML = renderNumber(details.networkCount.toFixed(0));
+    elemById('sessionCacheCount').innerHTML = renderNumber(details.cacheCount.toFixed(0));
+    elemById('sessionCookieSentCount').innerHTML = details.cookieSentCount.toFixed(1);
+    elemById('sessionScriptCount').innerHTML = details.scriptCount.toFixed(1);
+    elemById('stopButton').style.display = 'none';
+    elemById('startButton').style.display = '';
+}
+
+backgroundPagePort.postMessage({ what: 'getPlaylist' });
+
+elemById('startButton').addEventListener('click', startSession);
+elemById('stopButton').addEventListener('click', stopSession);
+
+/******************************************************************************/
+
 });

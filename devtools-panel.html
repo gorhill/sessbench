@@ -87,16 +87,19 @@ table td:nth-of-type(1) {
         <li><code>wait <i>n</i></code>: Wait <i>n</i> seconds before each page load.
         <li><code>clear cache</code>: Clear the browser cache.
         <li><code><i>URL</i></code>: A URL to benchmark.
-    <p style="text-align:center"><button id="startButton">Start benchmark</button></p>
+    <p style="text-align:center">
+        <button id="startButton">Start benchmark</button>
+        <button id="stopButton" style="display:none">Abort benchmark</button>
+        </p>
     <table id="results">
-    <tr><td colspan="2">Averages over <span id="sessionRepeat">&mdash;</span> runs
-    <tr><td>Load time:<td><span id="sessionTime">&mdash;</span>
-    <tr><td>Bandwidth:<td><span id="sessionBandwidth">&mdash;</span>
-    <tr><td>Network hits:<td><span id="sessionNetworkCount">&mdash;</span>
-    <tr><td>Cache hits:<td><span id="sessionCacheCount">&mdash;</span>
-    <tr><td>Cookies (outbound):<td><span id="sessionCookieSentCount">&mdash;</span>
-    <tr><td>Scripts:<td><span id="sessionScriptCount">&mdash;</span>
-    </table>
+        <tr><td colspan="2">Averages over <span id="sessionRepeat">&mdash;</span> runs
+        <tr><td>Load time:<td><span id="sessionTime">&mdash;</span>
+        <tr><td>Bandwidth:<td><span id="sessionBandwidth">&mdash;</span>
+        <tr><td>Network hits:<td><span id="sessionNetworkCount">&mdash;</span>
+        <tr><td>Cache hits:<td><span id="sessionCacheCount">&mdash;</span>
+        <tr><td>Cookies (outbound):<td><span id="sessionCookieSentCount">&mdash;</span>
+        <tr><td>Scripts:<td><span id="sessionScriptCount">&mdash;</span>
+        </table>
 </div>
 
 <div class="pane">

@@ -41,7 +41,7 @@ var SessBench = {
     playlistPtr: 0,
     repeat: 1,
     wait: 1,
-    sessionTime: 0,
+    sessionLoadTime: 0,
     sessionBandwidth: 0,
     networkCount: 0,
     cacheCount: 0,
@@ -50,7 +50,7 @@ var SessBench = {
     repeatCountdown: 0,
     resultStack: [],
 
-    pageStartTime: 0,
+    pageURL: '',
 
     devtoolPorts: {},
     portCount: 0,
@@ -69,15 +69,17 @@ function startSession(request, portName) {
     sess.portName = portName;
     sess.tabId = request.tabId;
     parsePlaylist(request.playlistRaw);
-    setupSession();
+    initSession();
     executePlaylist();
+    sess.devtoolPorts[sess.portName].postMessage({ what: 'sessionStarted' });
 }
 
-function setupSession() {
+function initSession() {
     var sess = SessBench;
     sess.playlistPtr = 0;
     sess.resultStack = [];
     sess.repeatCountdown = sess.repeat;
+    sess.state = 'waiting';
 }
 
 function stopSession() {
@@ -86,7 +88,7 @@ function stopSession() {
         return;
     }
     var results = {
-        time: sess.sessionTime,
+        time: sess.sessionLoadTime,
         bandwidth: sess.sessionBandwidth,
         networkCount: sess.networkCount,
         cacheCount: sess.cacheCount,
@@ -98,6 +100,17 @@ function stopSession() {
     if ( sess.repeatCountdown ) {
         sess.playlistPtr = 0;
         wait(0);
+        return;
+    }
+    sess.state = '';
+    results = processResults(sess.resultStack);
+    results.what = 'sessionCompleted';
+    sess.devtoolPorts[sess.portName].postMessage(results);
+}
+
+function abortSession() {
+    var sess = SessBench;
+    if ( sess.state === '' ) {
         return;
     }
     sess.state = '';
@@ -139,8 +152,14 @@ function processResults(entries) {
     return results;
 }
 
+/******************************************************************************/
+
 function executePlaylist() {
     var sess = SessBench;
+
+    if ( sess.state === '' ) {
+        return;
+    }
 
     // wrap-up?
     if ( sess.playlistPtr === sess.playlist.length ) {
@@ -150,13 +169,12 @@ function executePlaylist() {
 
     // set-up?
     if ( sess.playlistPtr === 0 ) {
-        sess.sessionTime = 0;
+        sess.sessionLoadTime = 0;
         sess.sessionBandwidth = 0;
         sess.networkCount = 0;
         sess.cacheCount = 0;
         sess.scriptCount = 0;
         sess.cookieSentCount = 0;
-        sess.state = 'waiting';
     }
 
     var entry;
@@ -170,7 +188,7 @@ function executePlaylist() {
         }
 
         if ( entry.indexOf('http') === 0 ) {
-            loadPage(entry);
+            pageStart(entry);
             return;
         }
     }
@@ -201,11 +219,28 @@ function clearCacheCallback() {
 
 /******************************************************************************/
 
-function loadPage(url) {
+function pageStart(url) {
     chrome.tabs.update(SessBench.tabId, { url: url });
 }
 
-function loadPageCallback(details) {
+function pageStartCallback(details) {
+    if ( details.frameId ) {
+        return;
+    }
+    var sess = SessBench;
+    if ( details.tabId !== sess.tabId ) {
+        return;
+    }
+    if ( sess.state !== 'waiting' ) {
+        return;
+    }
+    sess.pageURL = details.url;
+    sess.state = 'loading';
+}
+
+/******************************************************************************/
+
+function pageStopCallback(details) {
     if ( details.frameId ) {
         return;
     }
@@ -216,49 +251,30 @@ function loadPageCallback(details) {
     if ( sess.state !== 'loading' ) {
         return;
     }
-    sess.sessionTime += Date.now() - sess.pageStartTime;
     sess.state = 'waiting';
-    wait(sess.wait);
+    getPageStats(sess.pageURL)
 }
 
 /******************************************************************************/
 
-function onBeforeRequestHandler(details) {
-    if ( details.parentFrameId >= 0 ) {
-        return;
-    }
+function getPageStats(pageURL) {
     var sess = SessBench;
-    if ( details.tabId !== sess.tabId ) {
-        return;
-    }
-    if ( sess.state !== 'waiting' ) {
-        return;
-    }
-    sess.pageStartTime = Date.now();
-    sess.state = 'loading';
+    sess.devtoolPorts[sess.portName].postMessage({
+        what: 'getPageStats',
+        pageURL: pageURL
+    });
 }
 
-/******************************************************************************/
-
-function processNetworkRequest(details, portName) {
+function getPageStatsCallback(details) {
+    // aggregate stats
     var sess = SessBench;
-    if ( sess.portName !== portName ) {
-        return;
-    }
-    if ( sess.state !== 'loading' ) {
-        return;
-    }
-    sess.sessionBandwidth += details.uploadSize;
-    sess.sessionBandwidth += details.downloadSize;
-    if ( details.fromCache ) {
-        sess.cacheCount++;
-    } else {
-        sess.networkCount++;
-    }
+    sess.sessionLoadTime += details.loadTime;
+    sess.sessionBandwidth += details.bandwidth;
+    sess.cacheCount += details.cacheCount;
+    sess.networkCount += details.networkCount;
     sess.cookieSentCount += details.cookieSentCount;
-    if ( details.isScript ) {
-        sess.scriptCount++;
-    }
+    sess.scriptCount += details.scriptCount;
+    wait(sess.wait);
 }
 
 /******************************************************************************/
@@ -270,20 +286,36 @@ function onPortMessageHandler(request, port) {
     switch ( request.what ) {
 
     case 'getPlaylist':
-        port.postMessage({ what: 'setPlaylist', playlist: SessBench.playlist });
+        port.postMessage({ what: 'playlist', playlist: SessBench.playlist });
         break;
 
     case 'startSession':
         startSession(request, port.name);
         break;
 
-    case 'networkRequest':
-        processNetworkRequest(request, port.name);
+    case 'abortSession':
+        abortSession(request, port.name);
+        break;
+
+    case 'pageStats':
+        getPageStatsCallback(request);
         break;
 
     default:
         break;
     }
+}
+
+/******************************************************************************/
+
+function startPageListeners() {
+    chrome.webNavigation.onBeforeNavigate.addListener(pageStartCallback);
+    chrome.webNavigation.onCompleted.addListener(pageStopCallback);
+}
+
+function stopPageListeners() {
+    chrome.webNavigation.onBeforeNavigate.removeListener(pageStartCallback);
+    chrome.webNavigation.onCompleted.removeListener(pageStopCallback);
 }
 
 /******************************************************************************/
@@ -315,30 +347,6 @@ function onPortConnectHandler(port) {
     port.onDisconnect.addListener(onPortDisonnectHandler);
 }
 chrome.runtime.onConnect.addListener(onPortConnectHandler);
-
-/******************************************************************************/
-
-function startPageListeners() {
-    chrome.webRequest.onBeforeRequest.addListener(
-        onBeforeRequestHandler,
-        {
-            "urls": [
-                "http://*/*",
-                "https://*/*",
-            ],
-            "types": [
-                "main_frame"
-            ]
-        },
-        [ "blocking" ]
-    );
-    chrome.webNavigation.onCompleted.addListener(loadPageCallback);
-}
-
-function stopPageListeners() {
-    chrome.webNavigation.onCompleted.removeListener(loadPageCallback);
-    chrome.webRequest.onBeforeRequest.removeListener(onBeforeRequestHandler);
-}
 
 /******************************************************************************/
 
