@@ -45,8 +45,10 @@ var SessBench = {
     sessionBandwidth: 0,
     networkCount: 0,
     cacheCount: 0,
-    scriptCount: 0,
-    cookieSentCount: 0,
+    firstPartyCookieSentCount: 0,
+    thirdPartyCookieSentCount: 0,
+    firstPartyScriptCount: 0,
+    thirdPartyHostCount: 0,
     repeatCountdown: 0,
     resultStack: [],
 
@@ -61,7 +63,7 @@ var SessBench = {
 
 /******************************************************************************/
 
-function startSession(request, portName) {
+function startBenchmark(request, portName) {
     var sess = SessBench;
     if ( sess.state !== '' ) {
         return;
@@ -69,9 +71,28 @@ function startSession(request, portName) {
     sess.portName = portName;
     sess.tabId = request.tabId;
     parsePlaylist(request.playlistRaw);
+    sess.devtoolPorts[sess.portName].postMessage({ what: 'benchmarkStarted' });
+    startSession();
+}
+
+function stopBenchmark() {
+    var sess = SessBench;
+    if ( sess.state === '' ) {
+        return;
+    }
+    sess.state = '';
+    results = processResults(sess.resultStack);
+    results.what = 'benchmarkCompleted';
+    sess.devtoolPorts[sess.portName].postMessage(results);
+}
+
+/******************************************************************************/
+
+function startSession(request, portName) {
+    var sess = SessBench;
     initSession();
-    executePlaylist();
     sess.devtoolPorts[sess.portName].postMessage({ what: 'sessionStarted' });
+    executePlaylist();
 }
 
 function initSession() {
@@ -92,10 +113,14 @@ function stopSession() {
         bandwidth: sess.sessionBandwidth,
         networkCount: sess.networkCount,
         cacheCount: sess.cacheCount,
-        cookieSentCount: sess.cookieSentCount,
-        scriptCount: sess.scriptCount
+        firstPartyCookieSentCount: sess.firstPartyCookieSentCount,
+        thirdPartyCookieSentCount: sess.thirdPartyCookieSentCount,
+        firstPartyScriptCount: sess.firstPartyScriptCount,
+        thirdPartyHostCount: sess.thirdPartyHostCount
     };
     sess.resultStack.push(results);
+    results = processResults(sess.resultStack);
+    sess.devtoolPorts[sess.portName].postMessage(results);
     sess.repeatCountdown--;
     if ( sess.repeatCountdown ) {
         sess.playlistPtr = 0;
@@ -103,33 +128,25 @@ function stopSession() {
         return;
     }
     sess.state = '';
-    results = processResults(sess.resultStack);
-    results.what = 'sessionCompleted';
-    sess.devtoolPorts[sess.portName].postMessage(results);
+    sess.devtoolPorts[sess.portName].postMessage({ what: 'benchmarkCompleted' });
 }
 
-function abortSession() {
-    var sess = SessBench;
-    if ( sess.state === '' ) {
-        return;
-    }
-    sess.state = '';
-    results = processResults(sess.resultStack);
-    results.what = 'sessionCompleted';
-    sess.devtoolPorts[sess.portName].postMessage(results);
-}
+/******************************************************************************/
 
 function processResults(entries) {
     var n = entries.length,
         i = n;
     var results = {
+        what: 'sessionCompleted',
         repeatCount: n,
         time: 0,
         bandwidth: 0,
         networkCount: 0,
         cacheCount: 0,
-        scriptCount: 0,
-        cookieSentCount: 0
+        firstPartyScriptCount: 0,
+        firstPartyCookieSentCount: 0,
+        thirdPartyCookieSentCount: 0,
+        thirdPartyHostCount: 0
     };
     var entry;
     while ( i-- ) {
@@ -138,16 +155,20 @@ function processResults(entries) {
         results.bandwidth += entry.bandwidth;
         results.networkCount += entry.networkCount;
         results.cacheCount += entry.cacheCount;
-        results.scriptCount += entry.scriptCount;
-        results.cookieSentCount += entry.cookieSentCount;
+        results.firstPartyScriptCount += entry.firstPartyScriptCount;
+        results.firstPartyCookieSentCount += entry.firstPartyCookieSentCount;
+        results.thirdPartyCookieSentCount += entry.thirdPartyCookieSentCount;
+        results.thirdPartyHostCount += entry.thirdPartyHostCount;
     }
     if ( n ) {
         results.time /= n;
         results.bandwidth /= n;
         results.networkCount /= n;
         results.cacheCount /= n;
-        results.scriptCount /= n;
-        results.cookieSentCount /= n;
+        results.firstPartyScriptCount /= n;
+        results.firstPartyCookieSentCount /= n;
+        results.thirdPartyCookieSentCount /= n;
+        results.thirdPartyHostCount /= n;
     }
     return results;
 }
@@ -173,8 +194,10 @@ function executePlaylist() {
         sess.sessionBandwidth = 0;
         sess.networkCount = 0;
         sess.cacheCount = 0;
-        sess.scriptCount = 0;
-        sess.cookieSentCount = 0;
+        sess.firstPartyScriptCount = 0;
+        sess.firstPartyCookieSentCount = 0;
+        sess.thirdPartyCookieSentCount = 0;
+        sess.thirdPartyHostCount = 0;
     }
 
     var entry;
@@ -184,6 +207,11 @@ function executePlaylist() {
 
         if ( entry === 'clear cache' ) {
             clearCache();
+            return;
+        }
+
+        if ( entry === 'clear cookies' ) {
+            clearCookies();
             return;
         }
 
@@ -214,6 +242,16 @@ function clearCache() {
 }
 
 function clearCacheCallback() {
+    executePlaylist();
+}
+
+/******************************************************************************/
+
+function clearCookies() {
+    chrome.browsingData.removeCookies({ since: 0 }, clearCookiesCallback);
+}
+
+function clearCookiesCallback() {
     executePlaylist();
 }
 
@@ -255,6 +293,18 @@ function pageStopCallback(details) {
     getPageStats(sess.pageURL)
 }
 
+function pageErrorCallback(details) {
+    var sess = SessBench;
+    if ( details.tabId !== sess.tabId ) {
+        return;
+    }
+    if ( sess.state !== 'loading' ) {
+        return;
+    }
+    sess.state = 'waiting';
+    getPageStats(sess.pageURL)
+}
+
 /******************************************************************************/
 
 function getPageStats(pageURL) {
@@ -272,8 +322,10 @@ function getPageStatsCallback(details) {
     sess.sessionBandwidth += details.bandwidth;
     sess.cacheCount += details.cacheCount;
     sess.networkCount += details.networkCount;
-    sess.cookieSentCount += details.cookieSentCount;
-    sess.scriptCount += details.scriptCount;
+    sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;
+    sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
+    sess.firstPartyScriptCount += details.firstPartyScriptCount;
+    sess.thirdPartyHostCount += details.thirdPartyHostCount;
     wait(sess.wait);
 }
 
@@ -289,12 +341,12 @@ function onPortMessageHandler(request, port) {
         port.postMessage({ what: 'playlist', playlist: SessBench.playlist });
         break;
 
-    case 'startSession':
-        startSession(request, port.name);
+    case 'startBenchmark':
+        startBenchmark(request, port.name);
         break;
 
-    case 'abortSession':
-        abortSession(request, port.name);
+    case 'stopBenchmark':
+        stopBenchmark(request, port.name);
         break;
 
     case 'pageStats':
@@ -311,11 +363,13 @@ function onPortMessageHandler(request, port) {
 function startPageListeners() {
     chrome.webNavigation.onBeforeNavigate.addListener(pageStartCallback);
     chrome.webNavigation.onCompleted.addListener(pageStopCallback);
+    chrome.webNavigation.onErrorOccurred.addListener(pageErrorCallback);
 }
 
 function stopPageListeners() {
     chrome.webNavigation.onBeforeNavigate.removeListener(pageStartCallback);
     chrome.webNavigation.onCompleted.removeListener(pageStopCallback);
+    chrome.webNavigation.onErrorOccurred.removeListener(pageErrorCallback);
 }
 
 /******************************************************************************/
@@ -391,6 +445,14 @@ function parsePlaylist(text) {
         matches = line.match(/^clear +cache$/i);
         if ( matches ) {
             sess.playlist[sess.playlistPtr] = 'clear cache';
+            sess.playlistPtr++;
+            continue;
+        }
+
+        // clear cookies
+        matches = line.match(/^clear +cookies$/i);
+        if ( matches ) {
+            sess.playlist[sess.playlistPtr] = 'clear cookies';
             sess.playlistPtr++;
             continue;
         }

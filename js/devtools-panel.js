@@ -30,30 +30,77 @@ function elemById(id) {
     return document.getElementById(id);
 }
 
+/******************************************************************************/
+
 var backgroundPagePort = chrome.runtime.connect({
     name: 'devtools-panel-' + chrome.devtools.inspectedWindow.tabId
     });
 
+/******************************************************************************/
+
 function postPageStats(details) {
+    // HAR 1.2 Spec
+    // http://www.softwareishard.com/blog/har-12-spec/
     chrome.devtools.network.getHAR(function(harLog) {
+
+        var headerFromHeaders = function(key, headers) {
+            if ( !key || !headers ) {
+                return null;
+            }
+            key = key.toLowerCase();
+            var i = headers.length;
+            var header;
+            while ( i-- ) {
+                header = headers[i];
+                if ( header.name.toLowerCase() === key ) {
+                    return header;
+                }
+            }
+            return null;
+        };
+
+        var hostFromHeaders = function(headers) {
+            var header = headerFromHeaders('Host', headers);
+            if ( header ) {
+                return header.value;
+            }
+            return '';
+        };
+
+        var extractCookiesToDict = function(cookies, cookieDict) {
+            var i = cookies.length;
+            var cookie;
+            if ( i-- ) {
+                cookie = cookies[i];
+                if ( cookie.name ) {
+                    cookieDict[cookie.name] = true;
+                }
+            }
+        };
+
         var msg = {
             what: 'pageStats',
             loadTime: 0,
             networkCount: 0,
             cacheCount: 0,
-            cookieSentCount: 0,
-            scriptCount: 0
+            firstPartyScriptCount: 0,
+            firstPartyCookieSentCount: 0,
+            thirdPartyHostCount: 0
+            thirdPartyScriptCount: 0,
+            thirdPartyCookieSentCount: 0,
         };
+        var entries = harLog.entries;
+        var entry, header, reqhost;
+        var i, n = harLog.entries.length;
 
         // Find page URL reference
+        var pagehost = '';
         var pageref = '';
-        var i = harLog.pages.length;
-        var page;
-        while ( i-- ) {
-            page = harLog.pages[i];
-            if ( page.title === details.pageURL ) {
-                pageref = harLog.pages[i].id;
-                msg.loadTime = page.pageTimings.onLoad;
+        for ( i = 0; i < n; i++ ) {
+            entry = entries[i];
+            if ( entry.request.url === details.pageURL ) {
+                pageref = entry.pageref;
+                pagehost = hostFromHeaders(entry.request.headers);
                 break;
             }
         }
@@ -62,23 +109,40 @@ function postPageStats(details) {
             return;
         }
 
+        // Find page load time
+        var pages = harLog.pages;
+        var page;
+        i = pages.length;
+        while ( i-- ) {
+            page = pages[i];
+            if ( page.id === pageref ) {
+                msg.loadTime = page.pageTimings.onLoad;
+            }
+        }
+
         var bandwidth = 0;
         var networkCount = 0;
         var cacheCount = 0;
-        var scriptCount = 0;
-        var cookieSentCount = 0;
+        var firstPartyScriptCount = 0;
+        var thirdPartyScriptCount = 0;
+        var firstPartyCookies = {};
+        var thirdPartyCookies = {};
+        var thirdPartyHosts = {};
 
-        var entries = harLog.entries;
-        var i = entries.length;
-        var entry, request, response, mimeType;
-        while ( i-- ) {
+        var request, response, mimeType;
+        for ( i = 0; i < n; i++ ) {
             entry = entries[i];
             if ( entry.pageref !== pageref ) {
                 continue;
             }
             request = entry.request;
             response = entry.response;
-            if ( entry.connection ) {
+            reqhost = hostFromHeaders(request.headers);
+            thirdPartyHost = pagehost && reqhost && reqhost !== pagehost;
+            if ( thirdPartyHost ) {
+                thirdPartyHosts[reqhost] = true;
+            }
+            if ( reqhost ) {
                 networkCount++;
                 if ( request.headerSize ) {
                     bandwidth += request.headerSize;
@@ -92,34 +156,51 @@ function postPageStats(details) {
                 if ( response.bodySize ) {
                     bandwidth += response.bodySize;
                 }
-                cookieSentCount += request.cookies.length;
+                extractCookiesToDict(request.cookies, thirdPartyHost ? thirdPartyCookies : firstPartyCookies);
             } else {
                 cacheCount++;
+                console.assert(hostFromHeaders(request.headers) === '', 'NOT FROM CACHE!');
             }
             mimeType = response.content.mimeType;
             if ( mimeType && mimeType.indexOf('script') >= 0 ) {
-                scriptCount++;
+                if ( thirdPartyHost ) {
+                    thirdPartyScriptCount++;
+                } else {
+                    firstPartyScriptCount++;
+                }
             }
         }
         msg.bandwidth = bandwidth;
         msg.networkCount = networkCount;
         msg.cacheCount = cacheCount;
-        msg.cookieSentCount = cookieSentCount;
-        msg.scriptCount = scriptCount;
+        msg.firstPartyCookieSentCount = Object.keys(firstPartyCookies).length;
+        msg.thirdPartyCookieSentCount = Object.keys(thirdPartyCookies).length;
+        msg.firstPartyScriptCount = firstPartyScriptCount;
+        msg.thirdPartyHostCount = Object.keys(thirdPartyHosts).length;
+        msg.thirdPartyScriptCount = thirdPartyScriptCount;
         backgroundPagePort.postMessage(msg);
     });
 }
+
+/******************************************************************************/
 
 function onMessageHandler(request) {
     if ( request && request.what ) {
         switch ( request.what ) {
 
         case 'playlist':
-            elemById('playlistRaw').value = request.playlist.join('\n\n');
+            elemById('playlistRaw').value = request.playlist.join('\n');
+            break;
+
+        case 'benchmarkStarted':
+            benchmarkStarted(request);
+            break;
+
+        case 'benchmarkCompleted':
+            benchmarkCompleted();
             break;
 
         case 'sessionStarted':
-            sessionStarted(request);
             break;
 
         case 'sessionCompleted':
@@ -137,6 +218,8 @@ function onMessageHandler(request) {
 }
 backgroundPagePort.onMessage.addListener(onMessageHandler);
 
+/******************************************************************************/
+
 function renderNumber(value) {
     if ( +value > 1000 ) {
         value = value.toString();
@@ -149,49 +232,63 @@ function renderNumber(value) {
     return value;
 }
 
-function startSession() {
+function refreshResults(details) {
+    elemById('sessionRepeat').innerHTML = details.repeatCount;
+    elemById('sessionBandwidth').innerHTML = renderNumber(details.bandwidth.toFixed(0)) + ' bytes';
+    elemById('sessionNetworkCount').innerHTML = renderNumber(details.networkCount.toFixed(0));
+    elemById('sessionCacheCount').innerHTML = renderNumber(details.cacheCount.toFixed(0));
+    elemById('sessionFirstPartyScriptCount').innerHTML = details.firstPartyScriptCount.toFixed(1);
+    elemById('sessionThirdPartyHostCount').innerHTML = details.thirdPartyHostCount.toFixed(1);
+    elemById('sessionFirstPartyCookieSentCount').innerHTML = details.firstPartyCookieSentCount.toFixed(1);
+    elemById('sessionThirdPartyCookieSentCount').innerHTML = details.thirdPartyCookieSentCount.toFixed(1);
+}
+
+/******************************************************************************/
+
+function startBenchmark() {
     backgroundPagePort.postMessage({
-        what: 'startSession',
+        what: 'startBenchmark',
         tabId: chrome.devtools.inspectedWindow.tabId,
         playlistRaw: elemById('playlistRaw').value
     });
 }
 
-function sessionStarted() {
+function benchmarkStarted() {
     elemById('startButton').style.display = 'none';
     elemById('stopButton').style.display = '';
     elemById('sessionRepeat').innerHTML = '&mdash;';
-    elemById('sessionTime').innerHTML = '&mdash;';
+    //elemById('sessionTime').innerHTML = '&mdash;';
     elemById('sessionBandwidth').innerHTML = '&mdash;';
     elemById('sessionNetworkCount').innerHTML = '&mdash;';
     elemById('sessionCacheCount').innerHTML = '&mdash;';
-    elemById('sessionCookieSentCount').innerHTML = '&mdash;';
-    elemById('sessionScriptCount').innerHTML = '&mdash;';
+    elemById('sessionFirstPartyScriptCount').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyHostCount').innerHTML = '&mdash;';
+    elemById('sessionFirstPartyCookieSentCount').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyCookieSentCount').innerHTML = '&mdash;';
 }
 
-function stopSession() {
+function stopBenchmark() {
     backgroundPagePort.postMessage({
-        what: 'abortSession',
+        what: 'stopBenchmark',
         tabId: chrome.devtools.inspectedWindow.tabId
     });
 }
 
-function sessionCompleted(details) {
-    elemById('sessionRepeat').innerHTML = details.repeatCount;
-    elemById('sessionTime').innerHTML = (details.time / 1000).toFixed(3) + ' sec';
-    elemById('sessionBandwidth').innerHTML = renderNumber(details.bandwidth.toFixed(0)) + ' bytes';
-    elemById('sessionNetworkCount').innerHTML = renderNumber(details.networkCount.toFixed(0));
-    elemById('sessionCacheCount').innerHTML = renderNumber(details.cacheCount.toFixed(0));
-    elemById('sessionCookieSentCount').innerHTML = details.cookieSentCount.toFixed(1);
-    elemById('sessionScriptCount').innerHTML = details.scriptCount.toFixed(1);
+function benchmarkCompleted() {
     elemById('stopButton').style.display = 'none';
     elemById('startButton').style.display = '';
 }
 
+function sessionCompleted(details) {
+    refreshResults(details);
+}
+
+/******************************************************************************/
+
 backgroundPagePort.postMessage({ what: 'getPlaylist' });
 
-elemById('startButton').addEventListener('click', startSession);
-elemById('stopButton').addEventListener('click', stopSession);
+elemById('startButton').addEventListener('click', startBenchmark);
+elemById('stopButton').addEventListener('click', stopBenchmark);
 
 /******************************************************************************/
 
