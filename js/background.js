@@ -45,6 +45,7 @@ var SessBench = {
     sessionBandwidth: 0,
     networkCount: 0,
     cacheCount: 0,
+    blockCount: 0,
 
     firstPartyHostCount: 0,
     firstPartyScriptCount: 0,
@@ -117,6 +118,7 @@ function stopSession() {
         bandwidth: sess.sessionBandwidth,
         networkCount: sess.networkCount,
         cacheCount: sess.cacheCount,
+        blockCount: sess.blockCount,
         firstPartyHostCount: sess.firstPartyHostCount,
         firstPartyScriptCount: sess.firstPartyScriptCount,
         firstPartyCookieSentCount: sess.firstPartyCookieSentCount,
@@ -149,6 +151,7 @@ function processResults(entries) {
         bandwidth: 0,
         networkCount: 0,
         cacheCount: 0,
+        blockCount: 0,
         firstPartyHostCount: 0,
         firstPartyScriptCount: 0,
         firstPartyCookieSentCount: 0,
@@ -163,6 +166,7 @@ function processResults(entries) {
         results.bandwidth += entry.bandwidth;
         results.networkCount += entry.networkCount;
         results.cacheCount += entry.cacheCount;
+        results.blockCount += entry.blockCount;
         results.firstPartyHostCount += entry.firstPartyHostCount;
         results.firstPartyScriptCount += entry.firstPartyScriptCount;
         results.firstPartyCookieSentCount += entry.firstPartyCookieSentCount;
@@ -175,6 +179,7 @@ function processResults(entries) {
         results.bandwidth /= n;
         results.networkCount /= n;
         results.cacheCount /= n;
+        results.blockCount /= n;
         results.firstPartyHostCount /= n;
         results.firstPartyScriptCount /= n;
         results.firstPartyCookieSentCount /= n;
@@ -206,6 +211,7 @@ function executePlaylist() {
         sess.sessionBandwidth = 0;
         sess.networkCount = 0;
         sess.cacheCount = 0;
+        sess.blockCount = 0;
         sess.firstPartyHostCount = 0;
         sess.firstPartyScriptCount = 0;
         sess.firstPartyCookieSentCount = 0;
@@ -335,6 +341,7 @@ function getPageStatsCallback(details) {
     sess.sessionLoadTime += details.loadTime;
     sess.sessionBandwidth += details.bandwidth;
     sess.cacheCount += details.cacheCount;
+    sess.blockCount += details.blockCount;
     sess.networkCount += details.networkCount;
     sess.firstPartyHostCount += details.firstPartyHostCount;
     sess.firstPartyScriptCount += details.firstPartyScriptCount;

@@ -96,16 +96,11 @@ table td:nth-of-type(1) {
         <tr><td colspan="2">Averages over <span id="sessionRepeat">&mdash;</span> runs:
         <!-- <tr><td>Load time:<td><span id="sessionTime">&mdash;</span> -->
         <tr><td>Bandwidth:<td><span id="sessionBandwidth">&mdash;</span>
-        <tr><td>Network hits:<td><span id="sessionNetworkCount">&mdash;</span>
-        <tr><td>Cache hits:<td><span id="sessionCacheCount">&mdash;</span>
-        <tr><td colspan="2">&nbsp;
-        <tr><td>1st-party hosts:<td><span id="sessionFirstPartyHostCount">&mdash;</span>
-        <tr><td>1st-party scripts:<td><span id="sessionFirstPartyScriptCount">&mdash;</span>
-        <tr><td>1st-party cookies (outbound):<td><span id="sessionFirstPartyCookieSentCount">&mdash;</span>
-        <tr><td colspan="2">&nbsp;
-        <tr><td>3rd-party hosts:<td><span id="sessionThirdPartyHostCount">&mdash;</span>
-        <tr><td>3rd-party scripts:<td><span id="sessionThirdPartyScriptCount">&mdash;</span>
-        <tr><td>3rd-party cookies (outbound):<td><span id="sessionThirdPartyCookieSentCount">&mdash;</span>
+        <tr><td>Requests allowed (network + cache):<td><span id="sessionRequestCount">&mdash;</span> (<span id="sessionNetworkCount">&mdash;</span> + <span id="sessionCacheCount">&mdash;</span>)
+        <tr><td>Requests blocked:<td><span id="sessionBlockCount">&mdash;</span>
+        <tr><td>Hosts (1<sup>st</sup> + 3<sup>rd</sup> party):<td><span id="sessionHostCount">&mdash;</span> (<span id="sessionFirstPartyHostCount">&mdash;</span> + <span id="sessionThirdPartyHostCount">&mdash;</span>)
+        <tr><td>Scripts (1<sup>st</sup> + 3<sup>rd</sup> party):<td><span id="sessionScriptCount">&mdash;</span> (<span id="sessionFirstPartyScriptCount">&mdash;</span> + <span id="sessionThirdPartyScriptCount">&mdash;</span>)
+        <tr><td>Outbound cookies (1<sup>st</sup> + 3<sup>rd</sup> party):<td><span id="sessionCookieSentCount">&mdash;</span> (<span id="sessionFirstPartyCookieSentCount">&mdash;</span> + <span id="sessionThirdPartyCookieSentCount">&mdash;</span>)
         </table>
 </div>
 
@@ -115,6 +110,8 @@ table td:nth-of-type(1) {
 
 </div>
 
+<script src="lib/punycode.min.js"></script>
+<script src="lib/publicsuffixlist.min.js"></script>
 <script src="js/devtools-panel.js"></script>
 </body>
 </html>
