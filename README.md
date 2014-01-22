@@ -26,15 +26,22 @@ Open your browser developer tools. Click the *Browser benchmark*  tab.
 On the right there is a text area where you will enter directives. Valid directives
 are:
 - `clear cache`: empty the browser cache.
+- `clear cookie`: remove all cookies.
 - `wait n`: wait n seconds between each page load. Default to 1 second.
 - `repeat n`: repeat the benchmark n times, return averaged results. Default to 1.
 - URL: a URL which will be benchmarked. Must start with `http://` or `https://`.
 
 The results are displayed on the left when the benchmark complete:
-- *Load time*: the aggregate of the load time of *all* URLs in the list.
 - *Bandwidth*: the aggregate of the bandwidth used by *all* URLs in the list.
 - *Network hits*: the aggregate number of network hits as a result loading the the URLs in the browser.
 - *Cache hits*: the aggregate number of cache hits as a result of loading the URLs in the browser.
+- *Hosts*: the aggregate number of hosts.
+- *Scripts*: the aggregate number of scripts.
+- *Outbound cookies*: the aggregate number of cookies.
+
+Some stats above are also split in *1st* and *3rd* party figures:
+- 1st-party: a hostname for which the domain is the same as the domain of the URL of the page.
+- 3rd-party: a hostname for which the domain is different than the domain of the URL of the page.
 
 When the whole benchmark is repeated more than once, all the above values will
 be the average of the aggregated measurements.
