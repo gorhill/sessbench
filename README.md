@@ -48,23 +48,22 @@ be the average of the aggregated measurements.
 
 ### Example
 
-```
-clear cache
-repeat 5
+    repeat 5
+    clear cache
+    clear cookies
+    http://news.yahoo.com/
+    http://www.huffingtonpost.com/
+    http://www.cnn.com/
+    http://news.google.com/
+    http://www.nytimes.com/
+    http://www.foxnews.com/
+    http://www.theguardian.com/
+    http://www.nbcnews.com/
+    http://www.dailymail.co.uk/
+    http://www.usatoday.com/
+    http://www.washingtonpost.com/
+    http://www.wsj.com/
+    http://www.abcnews.go.com/
+    http://news.bbc.co.uk/
+    http://www.latimes.com/
 
-https://news.ycombinator.com/
-
-http://haufler.org/2014/01/19/i-hope-i-dont-get-kicked-out-of-yale-for-this/
-
-http://www.nytimes.com/2014/01/19/opinion/sunday/for-the-love-of-money.html
-
-http://jameso.be/2014/01/19/lisp.html
-
-http://www.asciiflow.com/
-
-http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/amd64/ISO-IMAGES/10.0/
-
-http://opinionator.blogs.nytimes.com/2014/01/18/what-happens-when-the-poor-receive-a-stipend/
-
-http://emacsredux.com/blog/2014/01/19/a-peek-at-emacs-24-dot-4-auto-indentation-by-default/
-```
