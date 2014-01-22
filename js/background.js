@@ -45,10 +45,14 @@ var SessBench = {
     sessionBandwidth: 0,
     networkCount: 0,
     cacheCount: 0,
-    firstPartyCookieSentCount: 0,
-    thirdPartyCookieSentCount: 0,
+
+    firstPartyHostCount: 0,
     firstPartyScriptCount: 0,
+    firstPartyCookieSentCount: 0,
     thirdPartyHostCount: 0,
+    thirdPartyScriptCount: 0,
+    thirdPartyCookieSentCount: 0,
+
     repeatCountdown: 0,
     resultStack: [],
 
@@ -113,10 +117,12 @@ function stopSession() {
         bandwidth: sess.sessionBandwidth,
         networkCount: sess.networkCount,
         cacheCount: sess.cacheCount,
-        firstPartyCookieSentCount: sess.firstPartyCookieSentCount,
-        thirdPartyCookieSentCount: sess.thirdPartyCookieSentCount,
+        firstPartyHostCount: sess.firstPartyHostCount,
         firstPartyScriptCount: sess.firstPartyScriptCount,
-        thirdPartyHostCount: sess.thirdPartyHostCount
+        firstPartyCookieSentCount: sess.firstPartyCookieSentCount,
+        thirdPartyHostCount: sess.thirdPartyHostCount,
+        thirdPartyScriptCount: sess.thirdPartyScriptCount,
+        thirdPartyCookieSentCount: sess.thirdPartyCookieSentCount
     };
     sess.resultStack.push(results);
     results = processResults(sess.resultStack);
@@ -143,10 +149,12 @@ function processResults(entries) {
         bandwidth: 0,
         networkCount: 0,
         cacheCount: 0,
+        firstPartyHostCount: 0,
         firstPartyScriptCount: 0,
         firstPartyCookieSentCount: 0,
-        thirdPartyCookieSentCount: 0,
-        thirdPartyHostCount: 0
+        thirdPartyHostCount: 0,
+        thirdPartyScriptCount: 0,
+        thirdPartyCookieSentCount: 0
     };
     var entry;
     while ( i-- ) {
@@ -155,20 +163,24 @@ function processResults(entries) {
         results.bandwidth += entry.bandwidth;
         results.networkCount += entry.networkCount;
         results.cacheCount += entry.cacheCount;
+        results.firstPartyHostCount += entry.firstPartyHostCount;
         results.firstPartyScriptCount += entry.firstPartyScriptCount;
         results.firstPartyCookieSentCount += entry.firstPartyCookieSentCount;
-        results.thirdPartyCookieSentCount += entry.thirdPartyCookieSentCount;
         results.thirdPartyHostCount += entry.thirdPartyHostCount;
+        results.thirdPartyScriptCount += entry.thirdPartyScriptCount;
+        results.thirdPartyCookieSentCount += entry.thirdPartyCookieSentCount;
     }
     if ( n ) {
         results.time /= n;
         results.bandwidth /= n;
         results.networkCount /= n;
         results.cacheCount /= n;
+        results.firstPartyHostCount /= n;
         results.firstPartyScriptCount /= n;
         results.firstPartyCookieSentCount /= n;
-        results.thirdPartyCookieSentCount /= n;
         results.thirdPartyHostCount /= n;
+        results.thirdPartyScriptCount /= n;
+        results.thirdPartyCookieSentCount /= n;
     }
     return results;
 }
@@ -194,10 +206,12 @@ function executePlaylist() {
         sess.sessionBandwidth = 0;
         sess.networkCount = 0;
         sess.cacheCount = 0;
+        sess.firstPartyHostCount = 0;
         sess.firstPartyScriptCount = 0;
         sess.firstPartyCookieSentCount = 0;
-        sess.thirdPartyCookieSentCount = 0;
         sess.thirdPartyHostCount = 0;
+        sess.thirdPartyScriptCount = 0;
+        sess.thirdPartyCookieSentCount = 0;
     }
 
     var entry;
@@ -322,10 +336,12 @@ function getPageStatsCallback(details) {
     sess.sessionBandwidth += details.bandwidth;
     sess.cacheCount += details.cacheCount;
     sess.networkCount += details.networkCount;
-    sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;
-    sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
+    sess.firstPartyHostCount += details.firstPartyHostCount;
     sess.firstPartyScriptCount += details.firstPartyScriptCount;
+    sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;
     sess.thirdPartyHostCount += details.thirdPartyHostCount;
+    sess.thirdPartyScriptCount += details.thirdPartyScriptCount;
+    sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
     wait(sess.wait);
 }
 

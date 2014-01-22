@@ -83,11 +83,12 @@ function postPageStats(details) {
             loadTime: 0,
             networkCount: 0,
             cacheCount: 0,
+            firstPartyHostCount: 0,
             firstPartyScriptCount: 0,
             firstPartyCookieSentCount: 0,
-            thirdPartyHostCount: 0
+            thirdPartyHostCount: 0,
             thirdPartyScriptCount: 0,
-            thirdPartyCookieSentCount: 0,
+            thirdPartyCookieSentCount: 0
         };
         var entries = harLog.entries;
         var entry, header, reqhost;
@@ -124,10 +125,10 @@ function postPageStats(details) {
         var networkCount = 0;
         var cacheCount = 0;
         var firstPartyScriptCount = 0;
-        var thirdPartyScriptCount = 0;
         var firstPartyCookies = {};
-        var thirdPartyCookies = {};
         var thirdPartyHosts = {};
+        var thirdPartyScriptCount = 0;
+        var thirdPartyCookies = {};
 
         var request, response, mimeType;
         for ( i = 0; i < n; i++ ) {
@@ -173,11 +174,12 @@ function postPageStats(details) {
         msg.bandwidth = bandwidth;
         msg.networkCount = networkCount;
         msg.cacheCount = cacheCount;
-        msg.firstPartyCookieSentCount = Object.keys(firstPartyCookies).length;
-        msg.thirdPartyCookieSentCount = Object.keys(thirdPartyCookies).length;
+        msg.firstPartyHostCount = 1;
         msg.firstPartyScriptCount = firstPartyScriptCount;
+        msg.firstPartyCookieSentCount = Object.keys(firstPartyCookies).length;
         msg.thirdPartyHostCount = Object.keys(thirdPartyHosts).length;
         msg.thirdPartyScriptCount = thirdPartyScriptCount;
+        msg.thirdPartyCookieSentCount = Object.keys(thirdPartyCookies).length;
         backgroundPagePort.postMessage(msg);
     });
 }
@@ -237,9 +239,11 @@ function refreshResults(details) {
     elemById('sessionBandwidth').innerHTML = renderNumber(details.bandwidth.toFixed(0)) + ' bytes';
     elemById('sessionNetworkCount').innerHTML = renderNumber(details.networkCount.toFixed(0));
     elemById('sessionCacheCount').innerHTML = renderNumber(details.cacheCount.toFixed(0));
+    elemById('sessionFirstPartyHostCount').innerHTML = details.firstPartyHostCount.toFixed(1);
     elemById('sessionFirstPartyScriptCount').innerHTML = details.firstPartyScriptCount.toFixed(1);
-    elemById('sessionThirdPartyHostCount').innerHTML = details.thirdPartyHostCount.toFixed(1);
     elemById('sessionFirstPartyCookieSentCount').innerHTML = details.firstPartyCookieSentCount.toFixed(1);
+    elemById('sessionThirdPartyHostCount').innerHTML = details.thirdPartyHostCount.toFixed(1);
+    elemById('sessionThirdPartyScriptCount').innerHTML = details.thirdPartyScriptCount.toFixed(1);
     elemById('sessionThirdPartyCookieSentCount').innerHTML = details.thirdPartyCookieSentCount.toFixed(1);
 }
 
@@ -261,9 +265,11 @@ function benchmarkStarted() {
     elemById('sessionBandwidth').innerHTML = '&mdash;';
     elemById('sessionNetworkCount').innerHTML = '&mdash;';
     elemById('sessionCacheCount').innerHTML = '&mdash;';
+    elemById('sessionFirstPartyHostCount').innerHTML = '&mdash;';
     elemById('sessionFirstPartyScriptCount').innerHTML = '&mdash;';
-    elemById('sessionThirdPartyHostCount').innerHTML = '&mdash;';
     elemById('sessionFirstPartyCookieSentCount').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyHostCount').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyScriptCount').innerHTML = '&mdash;';
     elemById('sessionThirdPartyCookieSentCount').innerHTML = '&mdash;';
 }
 
