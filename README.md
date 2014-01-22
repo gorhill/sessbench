@@ -46,7 +46,7 @@ Some stats above are also split in *1st* and *3rd* party figures:
 When the whole benchmark is repeated more than once, all the above values will
 be the average of the aggregated measurements.
 
-### Example
+## Example
 
     repeat 5
     clear cache
@@ -66,4 +66,6 @@ be the average of the aggregated measurements.
     http://www.abcnews.go.com/
     http://news.bbc.co.uk/
     http://www.latimes.com/
+
+And here are [typical results](http://www.wilderssecurity.com/showthread.php?p=2331907#post2331907).
 
