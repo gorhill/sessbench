@@ -41,7 +41,7 @@ The results are displayed on the left when the benchmark complete:
 
 Some stats above are also split in *1st* and *3rd* party figures:
 - 1st-party: a hostname for which the domain is the same as the domain of the URL of the page. Example: `blarg.foo.com` is 1st party to `www.foo.com`.
-- 3rd-party: a hostname for which the domain is different than the domain of the URL of the page. Example: `blarg.bar.com` is 3rd party to `www.foo.com`.
+- 3rd-party: a hostname for which the domain is different than the domain of the URL of the page. Example: `blarg.bar.com` is 3rd partyto `www.foo.com`.
 
 When the whole benchmark is repeated more than once, all the above values will
 be the average of the aggregated measurements.
