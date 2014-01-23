@@ -93,14 +93,15 @@ table td:nth-of-type(1) {
         <button id="stopButton" style="display:none">Abort benchmark</button>
         </p>
     <table id="results">
-        <tr><td colspan="2">Averages over <span id="sessionRepeat">&mdash;</span> runs:
+        <tr><td colspan="2">Averages after <span id="sessionRepeat">&mdash;</span> runs:
         <!-- <tr><td>Load time:<td><span id="sessionTime">&mdash;</span> -->
+        <tr><td>URLs visited:<td><span id="sessionURLCount">&mdash;</span>
         <tr><td>Bandwidth:<td><span id="sessionBandwidth">&mdash;</span>
-        <tr><td>Requests allowed (network + cache):<td><span id="sessionRequestCount">&mdash;</span> (<span id="sessionNetworkCount">&mdash;</span> + <span id="sessionCacheCount">&mdash;</span>)
-        <tr><td>Requests blocked:<td><span id="sessionBlockCount">&mdash;</span>
-        <tr><td>Hosts (1<sup>st</sup> + 3<sup>rd</sup> party):<td><span id="sessionHostCount">&mdash;</span> (<span id="sessionFirstPartyHostCount">&mdash;</span> + <span id="sessionThirdPartyHostCount">&mdash;</span>)
-        <tr><td>Scripts (1<sup>st</sup> + 3<sup>rd</sup> party):<td><span id="sessionScriptCount">&mdash;</span> (<span id="sessionFirstPartyScriptCount">&mdash;</span> + <span id="sessionThirdPartyScriptCount">&mdash;</span>)
-        <tr><td>Outbound cookies (1<sup>st</sup> + 3<sup>rd</sup> party):<td><span id="sessionCookieSentCount">&mdash;</span> (<span id="sessionFirstPartyCookieSentCount">&mdash;</span> + <span id="sessionThirdPartyCookieSentCount">&mdash;</span>)
+        <tr><td>Net requests (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyRequestCount">&mdash;</span> / <span id="sessionRequestCount">&mdash;</span>
+        <tr><td>Domains (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyDomainCount">&mdash;</span> / <span id="sessionDomainCount">&mdash;</span>
+        <tr><td>Hosts (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyHostCount">&mdash;</span> / <span id="sessionHostCount">&mdash;</span>
+        <tr><td>Scripts (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyScriptCount">&mdash;</span> / <span id="sessionScriptCount">&mdash;</span>
+        <tr><td>Outbound cookies (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyCookieSentCount">&mdash;</span> / <span id="sessionCookieSentCount">&mdash;</span>
         </table>
 </div>
 

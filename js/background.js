@@ -18,6 +18,7 @@
 
     Home: https://github.com/gorhill/sessbench
 
+    TODO: cleanup/refactor
 */
 
 /******************************************************************************/
@@ -42,14 +43,18 @@ var SessBench = {
     repeat: 1,
     wait: 1,
     sessionLoadTime: 0,
+    URLCount: 0,
     sessionBandwidth: 0,
     networkCount: 0,
     cacheCount: 0,
     blockCount: 0,
 
+    firstPartyRequestCount: 0,
     firstPartyHostCount: 0,
     firstPartyScriptCount: 0,
     firstPartyCookieSentCount: 0,
+    thirdPartyRequestCount: 0,
+    thirdPartyDomainCount: 0,
     thirdPartyHostCount: 0,
     thirdPartyScriptCount: 0,
     thirdPartyCookieSentCount: 0,
@@ -115,13 +120,17 @@ function stopSession() {
     }
     var results = {
         time: sess.sessionLoadTime,
+        URLCount: sess.URLCount,
         bandwidth: sess.sessionBandwidth,
         networkCount: sess.networkCount,
         cacheCount: sess.cacheCount,
         blockCount: sess.blockCount,
+        firstPartyRequestCount: sess.firstPartyRequestCount,
         firstPartyHostCount: sess.firstPartyHostCount,
         firstPartyScriptCount: sess.firstPartyScriptCount,
         firstPartyCookieSentCount: sess.firstPartyCookieSentCount,
+        thirdPartyRequestCount: sess.thirdPartyRequestCount,
+        thirdPartyDomainCount: sess.thirdPartyDomainCount,
         thirdPartyHostCount: sess.thirdPartyHostCount,
         thirdPartyScriptCount: sess.thirdPartyScriptCount,
         thirdPartyCookieSentCount: sess.thirdPartyCookieSentCount
@@ -148,13 +157,17 @@ function processResults(entries) {
         what: 'sessionCompleted',
         repeatCount: n,
         time: 0,
+        URLCount: 0,
         bandwidth: 0,
         networkCount: 0,
         cacheCount: 0,
         blockCount: 0,
+        firstPartyRequestCount: 0,
         firstPartyHostCount: 0,
         firstPartyScriptCount: 0,
         firstPartyCookieSentCount: 0,
+        thirdPartyRequestCount: 0,
+        thirdPartyDomainCount: 0,
         thirdPartyHostCount: 0,
         thirdPartyScriptCount: 0,
         thirdPartyCookieSentCount: 0
@@ -163,26 +176,34 @@ function processResults(entries) {
     while ( i-- ) {
         entry = entries[i];
         results.time += entry.time;
+        results.URLCount += entry.URLCount;
         results.bandwidth += entry.bandwidth;
         results.networkCount += entry.networkCount;
         results.cacheCount += entry.cacheCount;
         results.blockCount += entry.blockCount;
+        results.firstPartyRequestCount += entry.firstPartyRequestCount;
         results.firstPartyHostCount += entry.firstPartyHostCount;
         results.firstPartyScriptCount += entry.firstPartyScriptCount;
         results.firstPartyCookieSentCount += entry.firstPartyCookieSentCount;
+        results.thirdPartyRequestCount += entry.thirdPartyRequestCount;
+        results.thirdPartyDomainCount += entry.thirdPartyDomainCount;
         results.thirdPartyHostCount += entry.thirdPartyHostCount;
         results.thirdPartyScriptCount += entry.thirdPartyScriptCount;
         results.thirdPartyCookieSentCount += entry.thirdPartyCookieSentCount;
     }
     if ( n ) {
         results.time /= n;
+        results.URLCount /= n;
         results.bandwidth /= n;
         results.networkCount /= n;
         results.cacheCount /= n;
         results.blockCount /= n;
+        results.firstPartyRequestCount /= n;
         results.firstPartyHostCount /= n;
         results.firstPartyScriptCount /= n;
         results.firstPartyCookieSentCount /= n;
+        results.thirdPartyRequestCount /= n;
+        results.thirdPartyDomainCount /= n;
         results.thirdPartyHostCount /= n;
         results.thirdPartyScriptCount /= n;
         results.thirdPartyCookieSentCount /= n;
@@ -208,13 +229,17 @@ function executePlaylist() {
     // set-up?
     if ( sess.playlistPtr === 0 ) {
         sess.sessionLoadTime = 0;
+        sess.URLCount = 0;
         sess.sessionBandwidth = 0;
         sess.networkCount = 0;
         sess.cacheCount = 0;
         sess.blockCount = 0;
+        sess.firstPartyRequestCount = 0;
         sess.firstPartyHostCount = 0;
         sess.firstPartyScriptCount = 0;
         sess.firstPartyCookieSentCount = 0;
+        sess.thirdPartyRequestCount = 0;
+        sess.thirdPartyDomainCount = 0;
         sess.thirdPartyHostCount = 0;
         sess.thirdPartyScriptCount = 0;
         sess.thirdPartyCookieSentCount = 0;
@@ -339,13 +364,17 @@ function getPageStatsCallback(details) {
     // aggregate stats
     var sess = SessBench;
     sess.sessionLoadTime += details.loadTime;
+    sess.URLCount++;
     sess.sessionBandwidth += details.bandwidth;
     sess.cacheCount += details.cacheCount;
     sess.blockCount += details.blockCount;
     sess.networkCount += details.networkCount;
+    sess.firstPartyRequestCount += details.firstPartyRequestCount;
     sess.firstPartyHostCount += details.firstPartyHostCount;
     sess.firstPartyScriptCount += details.firstPartyScriptCount;
     sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;
+    sess.thirdPartyRequestCount += details.thirdPartyRequestCount;
+    sess.thirdPartyDomainCount += details.thirdPartyDomainCount;
     sess.thirdPartyHostCount += details.thirdPartyHostCount;
     sess.thirdPartyScriptCount += details.thirdPartyScriptCount;
     sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;

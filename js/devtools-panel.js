@@ -18,6 +18,7 @@
 
     Home: https://github.com/gorhill/sessbench
 
+    TODO: cleanup/refactor
 */
 
 /******************************************************************************/
@@ -114,9 +115,12 @@ function postPageStats(details) {
             networkCount: 0,
             cacheCount: 0,
             blockCount: 0,
+            firstPartyRequestCount: 0,
             firstPartyHostCount: 0,
             firstPartyScriptCount: 0,
             firstPartyCookieSentCount: 0,
+            thirdPartyRequestCount: 0,
+            thirdPartyDomainCount: 0,
             thirdPartyHostCount: 0,
             thirdPartyScriptCount: 0,
             thirdPartyCookieSentCount: 0
@@ -159,12 +163,16 @@ function postPageStats(details) {
         var networkCount = 0;
         var cacheCount = 0;
         var blockCount = 0;
+        var firstPartyRequestCount = 0;
         var firstPartyHosts = {};
         var firstPartyScriptCount = 0;
         var firstPartyCookies = {};
+        var thirdPartyRequestCount = 0;
+        var thirdPartyDomains = {};
         var thirdPartyHosts = {};
         var thirdPartyScriptCount = 0;
         var thirdPartyCookies = {};
+        var thirdPartyHost;
 
         var request, response, mimeType;
         for ( i = 0; i < n; i++ ) {
@@ -174,20 +182,35 @@ function postPageStats(details) {
             }
             request = entry.request;
             response = entry.response;
-            reqHost = hostFromHeaders(request.headers);
-            if ( reqHost.length ) {
-                reqDomain = window.publicSuffixList.getDomain(reqHost);
-                thirdPartyHost = pageDomain && reqDomain && reqDomain !== pageDomain;
-                if ( thirdPartyHost ) {
-                    thirdPartyHosts[reqHost] = true;
-                } else {
-                    firstPartyHosts[reqHost] = true;
-                }
-            }
             // Not blocked
-            if ( response.status ) {
+            if ( response.status || entry.connection ) {
                 // Not from cache
                 if ( entry.connection ) {
+                    // Figure whether 1st- or 3rd-party
+                    thirdPartyHost = false;
+                    reqHost = hostFromHeaders(request.headers);
+                    if ( reqHost.length ) {
+                        reqDomain = window.publicSuffixList.getDomain(reqHost);
+                        thirdPartyHost = pageDomain && reqDomain && reqDomain !== pageDomain;
+                    }
+                    if ( thirdPartyHost ) {
+                        thirdPartyRequestCount++;
+                        thirdPartyDomains[reqDomain] = true;
+                        thirdPartyHosts[reqHost] = true;
+                        extractCookiesToDict(request.cookies, thirdPartyCookies);
+                    } else {
+                        firstPartyRequestCount++;
+                        firstPartyHosts[reqHost] = true;
+                        extractCookiesToDict(request.cookies, firstPartyCookies);
+                    }
+                    mimeType = response.content.mimeType;
+                    if ( mimeType && mimeType.indexOf('script') >= 0 ) {
+                        if ( thirdPartyHost ) {
+                            thirdPartyScriptCount++;
+                        } else {
+                            firstPartyScriptCount++;
+                        }
+                    }
                     networkCount++;
                     if ( request.headerSize ) {
                         bandwidth += request.headerSize;
@@ -201,7 +224,6 @@ function postPageStats(details) {
                     if ( response.bodySize ) {
                         bandwidth += response.bodySize;
                     }
-                    extractCookiesToDict(request.cookies, thirdPartyHost ? thirdPartyCookies : firstPartyCookies);
                 }
                 // From cache
                 else {
@@ -212,27 +234,22 @@ function postPageStats(details) {
             else {
                 blockCount++;
             }
-
-            mimeType = response.content.mimeType;
-            if ( mimeType && mimeType.indexOf('script') >= 0 ) {
-                if ( thirdPartyHost ) {
-                    thirdPartyScriptCount++;
-                } else {
-                    firstPartyScriptCount++;
-                }
-            }
         }
         msg.bandwidth = bandwidth;
         msg.networkCount = networkCount;
         msg.cacheCount = cacheCount;
         msg.blockCount = blockCount;
+        msg.firstPartyRequestCount = firstPartyRequestCount;
         msg.firstPartyHostCount = Object.keys(firstPartyHosts).length;
         msg.firstPartyScriptCount = firstPartyScriptCount;
         msg.firstPartyCookieSentCount = Object.keys(firstPartyCookies).length;
+        msg.thirdPartyRequestCount = thirdPartyRequestCount;
+        msg.thirdPartyDomainCount = Object.keys(thirdPartyDomains).length;
         msg.thirdPartyHostCount = Object.keys(thirdPartyHosts).length;
         msg.thirdPartyScriptCount = thirdPartyScriptCount;
         msg.thirdPartyCookieSentCount = Object.keys(thirdPartyCookies).length;
         backgroundPagePort.postMessage(msg);
+        console.log('third-party hosts: %s', Object.keys(thirdPartyHosts).join(' '));
     });
 }
 
@@ -292,19 +309,17 @@ function renderIntToCeil(value) {
 
 function refreshResults(details) {
     elemById('sessionRepeat').innerHTML = details.repeatCount;
+    elemById('sessionURLCount').innerHTML = renderNumber(Math.ceil(details.URLCount));
     elemById('sessionBandwidth').innerHTML = renderNumber(Math.ceil(details.bandwidth)) + ' bytes';
-    elemById('sessionRequestCount').innerHTML = renderNumber(Math.ceil(details.networkCount + details.cacheCount));
-    elemById('sessionNetworkCount').innerHTML = renderNumber(Math.ceil(details.networkCount));
-    elemById('sessionCacheCount').innerHTML = renderNumber(Math.ceil(details.cacheCount));
-    elemById('sessionBlockCount').innerHTML = renderNumber(Math.ceil(details.blockCount));
+    elemById('sessionThirdPartyRequestCount').innerHTML = renderNumber(Math.ceil(details.thirdPartyRequestCount));
+    elemById('sessionRequestCount').innerHTML = renderNumber(Math.ceil(details.networkCount));
+    elemById('sessionThirdPartyDomainCount').innerHTML = Math.ceil(details.thirdPartyDomainCount);
+    elemById('sessionDomainCount').innerHTML = Math.ceil(details.thirdPartyDomainCount + 1);
     elemById('sessionHostCount').innerHTML = Math.ceil(details.firstPartyHostCount + details.thirdPartyHostCount);
-    elemById('sessionFirstPartyHostCount').innerHTML = Math.ceil(details.firstPartyHostCount);
     elemById('sessionThirdPartyHostCount').innerHTML = Math.ceil(details.thirdPartyHostCount);
     elemById('sessionScriptCount').innerHTML = Math.ceil(details.firstPartyScriptCount + details.thirdPartyScriptCount);
-    elemById('sessionFirstPartyScriptCount').innerHTML = Math.ceil(details.firstPartyScriptCount);
     elemById('sessionThirdPartyScriptCount').innerHTML = Math.ceil(details.thirdPartyScriptCount);
     elemById('sessionCookieSentCount').innerHTML = Math.ceil(details.firstPartyCookieSentCount + details.thirdPartyCookieSentCount);
-    elemById('sessionFirstPartyCookieSentCount').innerHTML = Math.ceil(details.firstPartyCookieSentCount);
     elemById('sessionThirdPartyCookieSentCount').innerHTML = Math.ceil(details.thirdPartyCookieSentCount);
 }
 
@@ -322,20 +337,17 @@ function benchmarkStarted() {
     elemById('startButton').style.display = 'none';
     elemById('stopButton').style.display = '';
     elemById('sessionRepeat').innerHTML = '&mdash;';
-    //elemById('sessionTime').innerHTML = '&mdash;';
+    elemById('sessionURLCount').innerHTML = '&mdash;';
     elemById('sessionBandwidth').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyRequestCount').innerHTML = '&mdash;';
     elemById('sessionRequestCount').innerHTML = '&mdash;';
-    elemById('sessionNetworkCount').innerHTML = '&mdash;';
-    elemById('sessionCacheCount').innerHTML = '&mdash;';
-    elemById('sessionBlockCount').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyDomainCount').innerHTML = '&mdash;';
+    elemById('sessionDomainCount').innerHTML = '&mdash;';
     elemById('sessionHostCount').innerHTML = '&mdash;';
-    elemById('sessionFirstPartyHostCount').innerHTML = '&mdash;';
-    elemById('sessionScriptCount').innerHTML = '&mdash;';
-    elemById('sessionFirstPartyScriptCount').innerHTML = '&mdash;';
-    elemById('sessionCookieSentCount').innerHTML = '&mdash;';
-    elemById('sessionFirstPartyCookieSentCount').innerHTML = '&mdash;';
     elemById('sessionThirdPartyHostCount').innerHTML = '&mdash;';
+    elemById('sessionScriptCount').innerHTML = '&mdash;';
     elemById('sessionThirdPartyScriptCount').innerHTML = '&mdash;';
+    elemById('sessionCookieSentCount').innerHTML = '&mdash;';
     elemById('sessionThirdPartyCookieSentCount').innerHTML = '&mdash;';
 }
 
