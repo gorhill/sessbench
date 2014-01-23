@@ -1,23 +1,17 @@
 # Browser session benchmarker
 
-A developer tool to benchmark (timing, bandwidth) realistic browser sessions
-for Chromium-based browsers.
+A developer tool benchmark realistic browser sessions for Chromium-based browsers in
+order to extract privacy-releated stats.
 
-"Realistic" as the type of performance a user could typically experience.
-
-This has been created in order to obtain objective numbers from measuring the
+This has been created in order to obtain objective numbers for measuring the
 impact of browser extensions known as blockers. The original motivation
 was [issue #151 of HTTP Switchboard](https://github.com/gorhill/httpswitchboard/issues/151).
 
 This developer tool is rather bare. I keep the output results as simple as can
 be because I plan to use these numbers for end users. Streams of statistical
-numbers would not be useful to the end-user. Consider the results approximate,
-given that I use Chomium APIs which purpose is not intented for accurate
-measurement. But I think the results are still valid and representative especially
-when used to compare one blocker to another.
+numbers would not be useful to the end-user.
 
-If you want to improve, just fork.
-
+If you want to improve, just fork, or ask for a pull request.
 
 ## Usage
 
