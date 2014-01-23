@@ -61,5 +61,5 @@ be the average of the aggregated measurements.
     http://news.bbc.co.uk/
     http://www.latimes.com/
 
-And here are [typical results](http://www.wilderssecurity.com/showthread.php?p=2331907#post2331907).
+And here are [typical results](https://github.com/gorhill/httpswitchboard/wiki/Comparative-benchmarks-against-widely-used-blockers:-Top-15-Most-Popular-News-Websites).
 
