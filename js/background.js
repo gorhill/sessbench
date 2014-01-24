@@ -37,6 +37,9 @@ var SessBench = {
     state: '',
     portName: '',
     tabId: 0,
+    waitTimeoutTimer: null,
+    waitTimeout: 30 * 1000, // 30s after navigating to the page
+
     playlistRaw: '',
     playlist: [],
     playlistPtr: 0,
@@ -277,7 +280,13 @@ function wait(s) {
 }
 
 function waitCallback() {
-    executePlaylist();
+    var sess = SessBench;
+    if ( sess.state === 'loading' ) {
+        sess.state = 'waiting';
+        getPageStats(sess.pageURL)
+    } else {
+        executePlaylist();
+    }
 }
 
 /******************************************************************************/
@@ -306,7 +315,7 @@ function pageStart(url) {
     chrome.tabs.update(SessBench.tabId, { url: url });
 }
 
-function pageStartCallback(details) {
+function pageLoadStartCallback(details) {
     if ( details.frameId ) {
         return;
     }
@@ -319,11 +328,14 @@ function pageStartCallback(details) {
     }
     sess.pageURL = details.url;
     sess.state = 'loading';
+    waitTimeout();
 }
 
 /******************************************************************************/
 
-function pageStopCallback(details) {
+// This takes care of redirection.
+
+function pageCommittedCallback(details) {
     if ( details.frameId ) {
         return;
     }
@@ -334,11 +346,15 @@ function pageStopCallback(details) {
     if ( sess.state !== 'loading' ) {
         return;
     }
-    sess.state = 'waiting';
-    getPageStats(sess.pageURL)
+    sess.pageURL = details.url;
 }
 
-function pageErrorCallback(details) {
+// Called once page load is completed.
+
+function pageLoadCompletedCallback(details) {
+    if ( details.frameId ) {
+        return;
+    }
     var sess = SessBench;
     if ( details.tabId !== sess.tabId ) {
         return;
@@ -346,8 +362,36 @@ function pageErrorCallback(details) {
     if ( sess.state !== 'loading' ) {
         return;
     }
+    waitTimeoutCancel();
+    if ( details.url !== sess.pageURL ) {
+        return;
+    }
+    // Time to wait before fetching page stats
+    wait(sess.wait);
+}
+
+/******************************************************************************/
+
+function waitTimeout() {
+    var sess = SessBench;
+    console.assert(sess.waitTimeoutTimer === null, 'waitTimeout(): SessBench.waitTimeoutTimer should be null!');
+    sess.waitTimeoutTimer = setTimeout(waitTimeoutCallback, sess.waitTimeout);
+}
+
+function waitTimeoutCallback() {
+    var sess = SessBench;
+    console.assert(sess.waitTimeoutTimer === null, 'waitTimeoutCallback(): SessBench.state should be "loading"!');
+    sess.waitTimeoutTimer = null;
     sess.state = 'waiting';
     getPageStats(sess.pageURL)
+}
+
+function waitTimeoutCancel() {
+    var sess = SessBench;
+    if ( sess.waitTimeoutTimer ) {
+        clearTimeout(sess.waitTimeoutTimer);
+        sess.waitTimeoutTimer = null;
+    }
 }
 
 /******************************************************************************/
@@ -378,7 +422,7 @@ function getPageStatsCallback(details) {
     sess.thirdPartyHostCount += details.thirdPartyHostCount;
     sess.thirdPartyScriptCount += details.thirdPartyScriptCount;
     sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
-    wait(sess.wait);
+    executePlaylist();
 }
 
 /******************************************************************************/
@@ -413,15 +457,15 @@ function onPortMessageHandler(request, port) {
 /******************************************************************************/
 
 function startPageListeners() {
-    chrome.webNavigation.onBeforeNavigate.addListener(pageStartCallback);
-    chrome.webNavigation.onCompleted.addListener(pageStopCallback);
-    chrome.webNavigation.onErrorOccurred.addListener(pageErrorCallback);
+    chrome.webNavigation.onBeforeNavigate.addListener(pageLoadStartCallback);
+    chrome.webNavigation.onCommitted.addListener(pageCommittedCallback);
+    chrome.webNavigation.onCompleted.addListener(pageLoadCompletedCallback);
 }
 
 function stopPageListeners() {
-    chrome.webNavigation.onBeforeNavigate.removeListener(pageStartCallback);
-    chrome.webNavigation.onCompleted.removeListener(pageStopCallback);
-    chrome.webNavigation.onErrorOccurred.removeListener(pageErrorCallback);
+    chrome.webNavigation.onBeforeNavigate.removeListener(pageLoadStartCallback);
+    chrome.webNavigation.onCommitted.removeListener(pageCommittedCallback);
+    chrome.webNavigation.onCompleted.removeListener(pageLoadCompletedCallback);
 }
 
 /******************************************************************************/
