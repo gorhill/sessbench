@@ -1,7 +1,7 @@
 # Browser session benchmarker
 
-A developer tool benchmark realistic browser sessions for Chromium-based browsers in
-order to extract privacy-releated stats.
+A developer tool to benchmark realistic browser sessions for Chromium-based browsers in
+order to extract privacy-related stats.
 
 ![Screenshot](https://raw.github.com/gorhill/sessbench/master/img/screenshot.png)
 
@@ -23,7 +23,7 @@ On the right there is a text area where you will enter directives. Valid directi
 are:
 - `clear cache`: empty the browser cache.
 - `clear cookie`: remove all cookies.
-- `wait n`: wait n seconds between each page load. Default to 1 second.
+- `wait n`: wait n seconds after a page has completely loaded before fetching stats. Default to 1 second.
 - `repeat n`: repeat the benchmark n times, return averaged results. Default to 1.
 - URL: a URL which will be benchmarked. Must start with `http://` or `https://`.
 
