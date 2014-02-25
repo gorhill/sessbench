@@ -123,7 +123,11 @@ function postPageStats(details) {
             thirdPartyDomainCount: 0,
             thirdPartyHostCount: 0,
             thirdPartyScriptCount: 0,
-            thirdPartyCookieSentCount: 0
+            thirdPartyCookieSentCount: 0,
+            thirdPartyDomains: {},
+            firstPartyHosts: {},
+            thirdPartyHosts: {}
+            
         };
         var entries = harLog.entries;
         var entry, header;
@@ -248,8 +252,11 @@ function postPageStats(details) {
         msg.thirdPartyHostCount = Object.keys(thirdPartyHosts).length;
         msg.thirdPartyScriptCount = thirdPartyScriptCount;
         msg.thirdPartyCookieSentCount = Object.keys(thirdPartyCookies).length;
+        msg.firstPartyDomains = [pageDomain];
+        msg.thirdPartyDomains = Object.keys(thirdPartyDomains);
+        msg.firstPartyHosts = Object.keys(firstPartyHosts);
+        msg.thirdPartyHosts = Object.keys(thirdPartyHosts);
         backgroundPagePort.postMessage(msg);
-        console.log('third-party hosts: %s', Object.keys(thirdPartyHosts).join(' '));
     });
 }
 

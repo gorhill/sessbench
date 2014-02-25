@@ -61,6 +61,10 @@ var SessBench = {
     thirdPartyHostCount: 0,
     thirdPartyScriptCount: 0,
     thirdPartyCookieSentCount: 0,
+    firstPartyDomains: [],
+    thirdPartyDomains: [],
+    firstPartyHosts: [],
+    thirdPartyHosts: [],
 
     repeatCountdown: 0,
     resultStack: [],
@@ -136,7 +140,11 @@ function stopSession() {
         thirdPartyDomainCount: sess.thirdPartyDomainCount,
         thirdPartyHostCount: sess.thirdPartyHostCount,
         thirdPartyScriptCount: sess.thirdPartyScriptCount,
-        thirdPartyCookieSentCount: sess.thirdPartyCookieSentCount
+        thirdPartyCookieSentCount: sess.thirdPartyCookieSentCount,
+        firstPartyDomains: sess.firstPartyDomains,
+        thirdPartyDomains: sess.thirdPartyDomains,
+        firstPartyHosts: sess.firstPartyHosts,
+        thirdPartyHosts: sess.thirdPartyHosts
     };
     sess.resultStack.push(results);
     results = processResults(sess.resultStack);
@@ -173,7 +181,11 @@ function processResults(entries) {
         thirdPartyDomainCount: 0,
         thirdPartyHostCount: 0,
         thirdPartyScriptCount: 0,
-        thirdPartyCookieSentCount: 0
+        thirdPartyCookieSentCount: 0,
+        firstPartyDomains: [],
+        thirdPartyDomains: [],
+        firstPartyHosts: [],
+        thirdPartyHosts: []
     };
     var entry;
     while ( i-- ) {
@@ -193,8 +205,12 @@ function processResults(entries) {
         results.thirdPartyHostCount += entry.thirdPartyHostCount;
         results.thirdPartyScriptCount += entry.thirdPartyScriptCount;
         results.thirdPartyCookieSentCount += entry.thirdPartyCookieSentCount;
+        results.firstPartyDomains = results.firstPartyDomains.concat(entry.firstPartyDomains);
+        results.thirdPartyDomains = results.thirdPartyDomains.concat(entry.thirdPartyDomains);
+        results.firstPartyHosts = results.firstPartyHosts.concat(entry.firstPartyHosts);
+        results.thirdPartyHosts = results.thirdPartyHosts.concat(entry.thirdPartyHosts);
     }
-    if ( n ) {
+    if ( n > 1 ) {
         results.time /= n;
         results.URLCount /= n;
         results.bandwidth /= n;
@@ -211,6 +227,11 @@ function processResults(entries) {
         results.thirdPartyScriptCount /= n;
         results.thirdPartyCookieSentCount /= n;
     }
+    results.firstPartyDomains.sort();
+    results.thirdPartyDomains.sort();
+    results.firstPartyHosts.sort();
+    results.thirdPartyHosts.sort();
+
     return results;
 }
 
@@ -246,12 +267,24 @@ function executePlaylist() {
         sess.thirdPartyHostCount = 0;
         sess.thirdPartyScriptCount = 0;
         sess.thirdPartyCookieSentCount = 0;
+        sess.firstPartyDomains = [];
+        sess.thirdPartyDomains = [];
+        sess.firstPartyHosts = [];
+        sess.thirdPartyHosts = [];
     }
 
     var entry;
     while ( sess.playlistPtr < sess.playlist.length ) {
         entry = sess.playlist[sess.playlistPtr];
         sess.playlistPtr++;
+
+        if ( entry.indexOf('repeat ') === 0 ) {
+            continue;
+        }
+
+        if ( entry.indexOf('wait ') === 0 ) {
+            continue;
+        }
 
         if ( entry === 'clear cache' ) {
             clearCache();
@@ -269,7 +302,6 @@ function executePlaylist() {
         }
     }
 
-    // Should not be reached with a valid playlist
     wait(1);
 }
 
@@ -374,13 +406,13 @@ function pageLoadCompletedCallback(details) {
 
 function waitTimeout() {
     var sess = SessBench;
-    console.assert(sess.waitTimeoutTimer === null, 'waitTimeout(): SessBench.waitTimeoutTimer should be null!');
+    // console.assert(sess.waitTimeoutTimer === null, 'waitTimeout(): SessBench.waitTimeoutTimer should be null!');
     sess.waitTimeoutTimer = setTimeout(waitTimeoutCallback, sess.waitTimeout);
 }
 
 function waitTimeoutCallback() {
     var sess = SessBench;
-    console.assert(sess.waitTimeoutTimer === null, 'waitTimeoutCallback(): SessBench.state should be "loading"!');
+    // console.assert(sess.waitTimeoutTimer !== null, 'waitTimeoutCallback(): SessBench.waitTimeoutTimer should not be null!');
     sess.waitTimeoutTimer = null;
     sess.state = 'waiting';
     getPageStats(sess.pageURL)
@@ -422,6 +454,10 @@ function getPageStatsCallback(details) {
     sess.thirdPartyHostCount += details.thirdPartyHostCount;
     sess.thirdPartyScriptCount += details.thirdPartyScriptCount;
     sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
+    sess.firstPartyDomains = sess.firstPartyDomains.concat(details.firstPartyDomains);
+    sess.thirdPartyDomains = sess.thirdPartyDomains.concat(details.thirdPartyDomains);
+    sess.firstPartyHosts = sess.firstPartyHosts.concat(details.firstPartyHosts);
+    sess.thirdPartyHosts = sess.thirdPartyHosts.concat(details.thirdPartyHosts);
     executePlaylist();
 }
 
@@ -523,6 +559,8 @@ function parsePlaylist(text) {
                 continue;
             }
             sess.repeat = Math.max(Math.min(x, 50), 1);
+            sess.playlist[sess.playlistPtr] = 'repeat ' + sess.repeat;
+            sess.playlistPtr++;
             continue;
         }
 
@@ -534,6 +572,8 @@ function parsePlaylist(text) {
                 continue;
             }
             sess.wait = Math.max(Math.min(x, 60), 1);
+            sess.playlist[sess.playlistPtr] = 'wait ' + sess.wait;
+            sess.playlistPtr++;
             continue;
         }
 
