@@ -37,8 +37,8 @@ var SessBench = {
     state: '',
     portName: '',
     tabId: 0,
-    waitTimeoutTimer: null,
-    waitTimeout: 30 * 1000, // 30s after navigating to the page
+    pageLoadCompletedTimeoutTimer: null,
+    pageLoadCompletedTimeout: 20 * 1000, // 20s after navigating to the page
 
     playlistRaw: '',
     playlist: [],
@@ -355,17 +355,13 @@ function pageLoadStartCallback(details) {
     if ( details.tabId !== sess.tabId ) {
         return;
     }
+    sess.pageURL = details.url;
     if ( sess.state !== 'waiting' ) {
         return;
     }
-    sess.pageURL = details.url;
     sess.state = 'loading';
-    waitTimeout();
+    pageLoadCompletedTimeout();
 }
-
-/******************************************************************************/
-
-// This takes care of redirection.
 
 function pageCommittedCallback(details) {
     if ( details.frameId ) {
@@ -381,8 +377,6 @@ function pageCommittedCallback(details) {
     sess.pageURL = details.url;
 }
 
-// Called once page load is completed.
-
 function pageLoadCompletedCallback(details) {
     if ( details.frameId ) {
         return;
@@ -391,10 +385,13 @@ function pageLoadCompletedCallback(details) {
     if ( details.tabId !== sess.tabId ) {
         return;
     }
+    if ( sess.pageLoadCompletedTimeoutTimer === null ) {
+        return;
+    }
     if ( sess.state !== 'loading' ) {
         return;
     }
-    waitTimeoutCancel();
+    pageLoadCompletedTimeoutCancel();
     if ( details.url !== sess.pageURL ) {
         return;
     }
@@ -402,27 +399,29 @@ function pageLoadCompletedCallback(details) {
     wait(sess.wait);
 }
 
+function pageLoadCompletedTimeoutCallback() {
+    var sess = SessBench;
+    // console.assert(sess.pageLoadCompletedTimeoutTimer !== null, 'pageLoadCompletedTimeoutCallback(): SessBench.pageLoadCompletedTimeoutTimer should not be null!');
+    sess.pageLoadCompletedTimeoutTimer = null;
+    if ( sess.state !== 'loading' ) {
+        return;
+    }
+    wait(sess.wait);
+}
+
 /******************************************************************************/
 
-function waitTimeout() {
+function pageLoadCompletedTimeout() {
     var sess = SessBench;
-    // console.assert(sess.waitTimeoutTimer === null, 'waitTimeout(): SessBench.waitTimeoutTimer should be null!');
-    sess.waitTimeoutTimer = setTimeout(waitTimeoutCallback, sess.waitTimeout);
+    // console.assert(sess.pageLoadCompletedTimeoutTimer === null, 'pageLoadCompletedTimeout(): SessBench.pageLoadCompletedTimeoutTimer should be null!');
+    sess.pageLoadCompletedTimeoutTimer = setTimeout(pageLoadCompletedTimeoutCallback, sess.pageLoadCompletedTimeout);
 }
 
-function waitTimeoutCallback() {
+function pageLoadCompletedTimeoutCancel() {
     var sess = SessBench;
-    // console.assert(sess.waitTimeoutTimer !== null, 'waitTimeoutCallback(): SessBench.waitTimeoutTimer should not be null!');
-    sess.waitTimeoutTimer = null;
-    sess.state = 'waiting';
-    getPageStats(sess.pageURL)
-}
-
-function waitTimeoutCancel() {
-    var sess = SessBench;
-    if ( sess.waitTimeoutTimer ) {
-        clearTimeout(sess.waitTimeoutTimer);
-        sess.waitTimeoutTimer = null;
+    if ( sess.pageLoadCompletedTimeoutTimer ) {
+        clearTimeout(sess.pageLoadCompletedTimeoutTimer);
+        sess.pageLoadCompletedTimeoutTimer = null;
     }
 }
 
@@ -437,6 +436,7 @@ function getPageStats(pageURL) {
 }
 
 function getPageStatsCallback(details) {
+    console.log('getPageStatsCallback(%o) for %s', details, details.pageURL);
     // aggregate stats
     var sess = SessBench;
     sess.sessionLoadTime += details.loadTime;

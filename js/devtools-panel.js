@@ -111,6 +111,7 @@ function postPageStats(details) {
 
         var msg = {
             what: 'pageStats',
+            pageURL: details.pageURL,
             loadTime: 0,
             networkCount: 0,
             cacheCount: 0,
