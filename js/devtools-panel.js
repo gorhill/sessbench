@@ -29,7 +29,7 @@ window.addEventListener('load', function() {
 
 // Initialize domain handler
 
-function readLocalTextFile(path) {
+function readLocalTextFile(path, callback) {
     // If location is local, assume local directory
     var url = path;
     if ( url.search(/^https?:\/\//) < 0 ) {
@@ -41,8 +41,8 @@ function readLocalTextFile(path) {
     // behind-the-scene requests processor.
     var text = null;
     var xhr = new XMLHttpRequest();
-    xhr.responseType = 'text';
-    xhr.open('GET', url, false);
+    xhr.open('GET', url, true);
+    xhr.onload = callback;
     xhr.send();
     if ( xhr.status === 200 ) {
         text = xhr.responseText;
@@ -51,8 +51,10 @@ function readLocalTextFile(path) {
 }
 
 (function(){
-    var list = readLocalTextFile('/lib/effective_tld_names.dat');
-    window.publicSuffixList.parse(list, punycode.toASCII);
+    var onReceived = function(xhr) {
+        window.publicSuffixList.parse(list, punycode.toASCII);
+    }
+    var list = readLocalTextFile('/lib/effective_tld_names.dat', onReceived);
 })();
 
 /******************************************************************************/
