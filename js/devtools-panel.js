@@ -44,17 +44,13 @@ function readLocalTextFile(path, callback) {
     xhr.open('GET', url, true);
     xhr.onload = callback;
     xhr.send();
-    if ( xhr.status === 200 ) {
-        text = xhr.responseText;
-    }
-    return text;
 }
 
 (function(){
     var onReceived = function(xhr) {
-        window.publicSuffixList.parse(list, punycode.toASCII);
+        window.publicSuffixList.parse(this.responseText, punycode.toASCII);
     }
-    var list = readLocalTextFile('/lib/effective_tld_names.dat', onReceived);
+    readLocalTextFile('/lib/effective_tld_names.dat', onReceived);
 })();
 
 /******************************************************************************/
@@ -334,6 +330,7 @@ function refreshResults(details) {
     elemById('sessionThirdPartyScriptCount').innerHTML = Math.ceil(details.thirdPartyScriptCount);
     elemById('sessionCookieSentCount').innerHTML = Math.ceil(details.firstPartyCookieSentCount + details.thirdPartyCookieSentCount);
     elemById('sessionThirdPartyCookieSentCount').innerHTML = Math.ceil(details.thirdPartyCookieSentCount);
+    elemById('sessionThirdPartyDomains').innerHTML = details.thirdPartyDomains.join('\n');
 }
 
 /******************************************************************************/
@@ -362,6 +359,7 @@ function benchmarkStarted() {
     elemById('sessionThirdPartyScriptCount').innerHTML = '&mdash;';
     elemById('sessionCookieSentCount').innerHTML = '&mdash;';
     elemById('sessionThirdPartyCookieSentCount').innerHTML = '&mdash;';
+    elemById('sessionThirdPartyDomains').innerHTML = '&mdash;';
 }
 
 function stopBenchmark() {

@@ -164,6 +164,14 @@ function stopSession() {
 /******************************************************************************/
 
 function processResults(entries) {
+    var uniqueValuesFromValues = function(aa) {
+        var map = {};
+        var i = aa.length;
+        while ( i-- ) {
+            map[aa[i]] = true;
+        }
+        return Object.keys(map).sort();
+    };
     var n = entries.length,
         i = n;
     var results = {
@@ -232,10 +240,10 @@ function processResults(entries) {
         results.thirdPartyScriptCount /= n;
         results.thirdPartyCookieSentCount /= n;
     }
-    results.firstPartyDomains.sort();
-    results.thirdPartyDomains.sort();
-    results.firstPartyHosts.sort();
-    results.thirdPartyHosts.sort();
+    results.firstPartyDomains = uniqueValuesFromValues(results.firstPartyDomains);
+    results.thirdPartyDomains = uniqueValuesFromValues(results.thirdPartyDomains);
+    results.firstPartyHosts = uniqueValuesFromValues(results.firstPartyHosts);
+    results.thirdPartyHosts = uniqueValuesFromValues(results.thirdPartyHosts);
 
     return results;
 }
@@ -442,7 +450,7 @@ function getPageStats(pageURL) {
 }
 
 function getPageStatsCallback(details) {
-    console.log('getPageStatsCallback(%o) for %s', details, details.pageURL);
+    //console.log('getPageStatsCallback(%o) for %s', details, details.pageURL);
     // aggregate stats
     var sess = SessBench;
     sess.sessionLoadTime += details.loadTime;

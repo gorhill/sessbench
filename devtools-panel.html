@@ -70,6 +70,10 @@ table td:nth-of-type(1) {
     }
 #startButton {
     }
+#sessionThirdPartyDomains {
+    white-space: pre;
+    font: 12px monospace;
+    }
 </style>
 </head>
 <body>
@@ -102,6 +106,8 @@ table td:nth-of-type(1) {
         <tr><td>Outbound cookies (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyCookieSentCount">&mdash;</span> / <span id="sessionCookieSentCount">&mdash;</span>
         <tr><td>Net requests (3<sup>rd</sup> party / all):<td><span id="sessionThirdPartyRequestCount">&mdash;</span> / <span id="sessionRequestCount">&mdash;</span>
         <tr><td>Bandwidth:<td><span id="sessionBandwidth">&mdash;</span>
+        <tr><td>3rd-party domains:<td>&nbsp;
+        <tr><td id="sessionThirdPartyDomains" colspan="2">&mdash;
         </table>
 </div>
 
@@ -112,7 +118,7 @@ table td:nth-of-type(1) {
 </div>
 
 <script src="lib/punycode.min.js"></script>
-<script src="lib/publicsuffixlist.min.js"></script>
+<script src="lib/publicsuffixlist.js"></script>
 <script src="js/devtools-panel.js"></script>
 </body>
 </html>
