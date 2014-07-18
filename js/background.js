@@ -53,6 +53,7 @@ var SessBench = {
     blockCount: 0,
 
     firstPartyRequestCount: 0,
+    firstPartyDomainCount: 0,
     firstPartyHostCount: 0,
     firstPartyScriptCount: 0,
     firstPartyCookieSentCount: 0,
@@ -133,6 +134,7 @@ function stopSession() {
         cacheCount: sess.cacheCount,
         blockCount: sess.blockCount,
         firstPartyRequestCount: sess.firstPartyRequestCount,
+        firstPartyDomainCount: sess.firstPartyDomainCount,
         firstPartyHostCount: sess.firstPartyHostCount,
         firstPartyScriptCount: sess.firstPartyScriptCount,
         firstPartyCookieSentCount: sess.firstPartyCookieSentCount,
@@ -174,6 +176,7 @@ function processResults(entries) {
         cacheCount: 0,
         blockCount: 0,
         firstPartyRequestCount: 0,
+        firstPartyDomainCount: 0,
         firstPartyHostCount: 0,
         firstPartyScriptCount: 0,
         firstPartyCookieSentCount: 0,
@@ -197,6 +200,7 @@ function processResults(entries) {
         results.cacheCount += entry.cacheCount;
         results.blockCount += entry.blockCount;
         results.firstPartyRequestCount += entry.firstPartyRequestCount;
+        results.firstPartyDomainCount += entry.firstPartyDomainCount;
         results.firstPartyHostCount += entry.firstPartyHostCount;
         results.firstPartyScriptCount += entry.firstPartyScriptCount;
         results.firstPartyCookieSentCount += entry.firstPartyCookieSentCount;
@@ -218,6 +222,7 @@ function processResults(entries) {
         results.cacheCount /= n;
         results.blockCount /= n;
         results.firstPartyRequestCount /= n;
+        results.firstPartyDomainCount /= n;
         results.firstPartyHostCount /= n;
         results.firstPartyScriptCount /= n;
         results.firstPartyCookieSentCount /= n;
@@ -259,6 +264,7 @@ function executePlaylist() {
         sess.cacheCount = 0;
         sess.blockCount = 0;
         sess.firstPartyRequestCount = 0;
+        sess.firstPartyDomainCount = 0;
         sess.firstPartyHostCount = 0;
         sess.firstPartyScriptCount = 0;
         sess.firstPartyCookieSentCount = 0;
@@ -446,6 +452,7 @@ function getPageStatsCallback(details) {
     sess.blockCount += details.blockCount;
     sess.networkCount += details.networkCount;
     sess.firstPartyRequestCount += details.firstPartyRequestCount;
+    sess.firstPartyDomainCount += details.firstPartyDomainCount;
     sess.firstPartyHostCount += details.firstPartyHostCount;
     sess.firstPartyScriptCount += details.firstPartyScriptCount;
     sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;

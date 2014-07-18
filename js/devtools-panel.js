@@ -247,6 +247,7 @@ function postPageStats(details) {
         msg.cacheCount = cacheCount;
         msg.blockCount = blockCount;
         msg.firstPartyRequestCount = firstPartyRequestCount;
+        msg.firstPartyDomainCount = 1;
         msg.firstPartyHostCount = Object.keys(firstPartyHosts).length;
         msg.firstPartyScriptCount = firstPartyScriptCount;
         msg.firstPartyCookieSentCount = Object.keys(firstPartyCookies).length;
@@ -260,6 +261,8 @@ function postPageStats(details) {
         msg.firstPartyHosts = Object.keys(firstPartyHosts);
         msg.thirdPartyHosts = Object.keys(thirdPartyHosts);
         backgroundPagePort.postMessage(msg);
+
+        console.debug('1st-party: %s\n\t%s', pageDomain, msg.thirdPartyDomains.join('\n\t'));
     });
 }
 
@@ -324,7 +327,7 @@ function refreshResults(details) {
     elemById('sessionThirdPartyRequestCount').innerHTML = renderNumber(Math.ceil(details.thirdPartyRequestCount));
     elemById('sessionRequestCount').innerHTML = renderNumber(Math.ceil(details.networkCount));
     elemById('sessionThirdPartyDomainCount').innerHTML = Math.ceil(details.thirdPartyDomainCount);
-    elemById('sessionDomainCount').innerHTML = Math.ceil(details.thirdPartyDomainCount + 1);
+    elemById('sessionDomainCount').innerHTML = Math.ceil(details.firstPartyDomainCount + details.thirdPartyDomainCount);
     elemById('sessionHostCount').innerHTML = Math.ceil(details.firstPartyHostCount + details.thirdPartyHostCount);
     elemById('sessionThirdPartyHostCount').innerHTML = Math.ceil(details.thirdPartyHostCount);
     elemById('sessionScriptCount').innerHTML = Math.ceil(details.firstPartyScriptCount + details.thirdPartyScriptCount);
