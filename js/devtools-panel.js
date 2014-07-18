@@ -262,7 +262,7 @@ function postPageStats(details) {
         msg.thirdPartyHosts = Object.keys(thirdPartyHosts);
         backgroundPagePort.postMessage(msg);
 
-        console.debug('1st-party: %s\n\t%s', pageDomain, msg.thirdPartyDomains.join('\n\t'));
+        // console.debug('1st-party: %s\n\t%s', pageDomain, msg.thirdPartyDomains.join('\n\t'));
     });
 }
 
