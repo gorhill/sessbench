@@ -111,10 +111,12 @@ function postPageStats(details) {
             what: 'pageStats',
             pageURL: details.pageURL,
             loadTime: 0,
+            bandwidth: 0,
             networkCount: 0,
             cacheCount: 0,
             blockCount: 0,
             firstPartyRequestCount: 0,
+            firstPartyDomainCount: 0,
             firstPartyHostCount: 0,
             firstPartyScriptCount: 0,
             firstPartyCookieSentCount: 0,
@@ -123,10 +125,10 @@ function postPageStats(details) {
             thirdPartyHostCount: 0,
             thirdPartyScriptCount: 0,
             thirdPartyCookieSentCount: 0,
-            thirdPartyDomains: {},
-            firstPartyHosts: {},
-            thirdPartyHosts: {}
-            
+            firstPartyDomains: [],
+            thirdPartyDomains: [],
+            firstPartyHosts: [],
+            thirdPartyHosts: []
         };
         var entries = harLog.entries;
         var entry, header;
@@ -147,6 +149,7 @@ function postPageStats(details) {
             }
         }
         if ( pageref === '' ) {
+            console.debug('sessbench> postPageStats(): no pageref...\n   needle: "%s"\n   haystack: "%o"', details.pageURL, entries);
             backgroundPagePort.postMessage(msg);
             return;
         }
@@ -198,7 +201,7 @@ function postPageStats(details) {
                     }
                     if ( thirdPartyHost ) {
                         thirdPartyRequestCount++;
-                        thirdPartyDomains[reqDomain] = true;
+                        thirdPartyDomains[reqDomain + ' ' + pageDomain] = true;
                         thirdPartyHosts[reqHost] = true;
                         extractCookiesToDict(request.cookies, thirdPartyCookies);
                     } else {
@@ -238,6 +241,7 @@ function postPageStats(details) {
                 blockCount++;
             }
         }
+
         msg.bandwidth = bandwidth;
         msg.networkCount = networkCount;
         msg.cacheCount = cacheCount;
@@ -257,8 +261,6 @@ function postPageStats(details) {
         msg.firstPartyHosts = Object.keys(firstPartyHosts);
         msg.thirdPartyHosts = Object.keys(thirdPartyHosts);
         backgroundPagePort.postMessage(msg);
-
-        // console.debug('1st-party: %s\n\t%s', pageDomain, msg.thirdPartyDomains.join('\n\t'));
     });
 }
 
@@ -301,15 +303,7 @@ backgroundPagePort.onMessage.addListener(onMessageHandler);
 /******************************************************************************/
 
 function renderNumber(value) {
-    if ( +value > 1000 ) {
-        value = value.toString();
-        var i = value.length - 3;
-        while ( i > 0 ) {
-            value = value.slice(0, i) + ',' + value.slice(i);
-            i -= 3;
-        }
-    }
-    return value;
+    return value.toLocaleString();
 }
 
 function renderIntToCeil(value) {
@@ -331,6 +325,7 @@ function refreshResults(details) {
     elemById('sessionCookieSentCount').innerHTML = Math.ceil(details.firstPartyCookieSentCount + details.thirdPartyCookieSentCount);
     elemById('sessionThirdPartyCookieSentCount').innerHTML = Math.ceil(details.thirdPartyCookieSentCount);
     elemById('sessionThirdPartyDomains').innerHTML = details.thirdPartyDomains.join('\n');
+    elemById('sessionFailedURLs').innerHTML = details.failedURLs.join('\n');
 }
 
 /******************************************************************************/

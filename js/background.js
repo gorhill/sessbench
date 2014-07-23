@@ -66,6 +66,7 @@ var SessBench = {
     thirdPartyDomains: [],
     firstPartyHosts: [],
     thirdPartyHosts: [],
+    failedURLs: [],
 
     repeatCountdown: 0,
     resultStack: [],
@@ -146,7 +147,8 @@ function stopSession() {
         firstPartyDomains: sess.firstPartyDomains,
         thirdPartyDomains: sess.thirdPartyDomains,
         firstPartyHosts: sess.firstPartyHosts,
-        thirdPartyHosts: sess.thirdPartyHosts
+        thirdPartyHosts: sess.thirdPartyHosts,
+        failedURLs: sess.failedURLs
     };
     sess.resultStack.push(results);
     results = processResults(sess.resultStack);
@@ -196,7 +198,8 @@ function processResults(entries) {
         firstPartyDomains: [],
         thirdPartyDomains: [],
         firstPartyHosts: [],
-        thirdPartyHosts: []
+        thirdPartyHosts: [],
+        failedURLs: []
     };
     var entry;
     while ( i-- ) {
@@ -221,6 +224,7 @@ function processResults(entries) {
         results.thirdPartyDomains = results.thirdPartyDomains.concat(entry.thirdPartyDomains);
         results.firstPartyHosts = results.firstPartyHosts.concat(entry.firstPartyHosts);
         results.thirdPartyHosts = results.thirdPartyHosts.concat(entry.thirdPartyHosts);
+        results.failedURLs = results.failedURLs.concat(entry.failedURLs);
     }
     if ( n > 1 ) {
         results.time /= n;
@@ -285,6 +289,7 @@ function executePlaylist() {
         sess.thirdPartyDomains = [];
         sess.firstPartyHosts = [];
         sess.thirdPartyHosts = [];
+        sess.failedURLs = [];
     }
 
     var entry;
@@ -453,26 +458,32 @@ function getPageStatsCallback(details) {
     //console.log('getPageStatsCallback(%o) for %s', details, details.pageURL);
     // aggregate stats
     var sess = SessBench;
-    sess.sessionLoadTime += details.loadTime;
-    sess.URLCount++;
-    sess.sessionBandwidth += details.bandwidth;
-    sess.cacheCount += details.cacheCount;
-    sess.blockCount += details.blockCount;
-    sess.networkCount += details.networkCount;
-    sess.firstPartyRequestCount += details.firstPartyRequestCount;
-    sess.firstPartyDomainCount += details.firstPartyDomainCount;
-    sess.firstPartyHostCount += details.firstPartyHostCount;
-    sess.firstPartyScriptCount += details.firstPartyScriptCount;
-    sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;
-    sess.thirdPartyRequestCount += details.thirdPartyRequestCount;
-    sess.thirdPartyDomainCount += details.thirdPartyDomainCount;
-    sess.thirdPartyHostCount += details.thirdPartyHostCount;
-    sess.thirdPartyScriptCount += details.thirdPartyScriptCount;
-    sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
-    sess.firstPartyDomains = sess.firstPartyDomains.concat(details.firstPartyDomains);
-    sess.thirdPartyDomains = sess.thirdPartyDomains.concat(details.thirdPartyDomains);
-    sess.firstPartyHosts = sess.firstPartyHosts.concat(details.firstPartyHosts);
-    sess.thirdPartyHosts = sess.thirdPartyHosts.concat(details.thirdPartyHosts);
+
+    // All went well?
+    if ( details.firstPartyDomainCount > 0 ) {
+        sess.sessionLoadTime += details.loadTime;
+        sess.URLCount++;
+        sess.sessionBandwidth += details.bandwidth;
+        sess.cacheCount += details.cacheCount;
+        sess.blockCount += details.blockCount;
+        sess.networkCount += details.networkCount;
+        sess.firstPartyRequestCount += details.firstPartyRequestCount;
+        sess.firstPartyDomainCount += details.firstPartyDomainCount;
+        sess.firstPartyHostCount += details.firstPartyHostCount;
+        sess.firstPartyScriptCount += details.firstPartyScriptCount;
+        sess.firstPartyCookieSentCount += details.firstPartyCookieSentCount;
+        sess.thirdPartyRequestCount += details.thirdPartyRequestCount;
+        sess.thirdPartyDomainCount += details.thirdPartyDomainCount;
+        sess.thirdPartyHostCount += details.thirdPartyHostCount;
+        sess.thirdPartyScriptCount += details.thirdPartyScriptCount;
+        sess.thirdPartyCookieSentCount += details.thirdPartyCookieSentCount;
+        sess.firstPartyDomains = sess.firstPartyDomains.concat(details.firstPartyDomains);
+        sess.thirdPartyDomains = sess.thirdPartyDomains.concat(details.thirdPartyDomains);
+        sess.firstPartyHosts = sess.firstPartyHosts.concat(details.firstPartyHosts);
+        sess.thirdPartyHosts = sess.thirdPartyHosts.concat(details.thirdPartyHosts);
+    } else {
+        sess.failedURLs.push(details.pageURL);
+    }
     executePlaylist();
 }
 
